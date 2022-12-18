@@ -2,7 +2,7 @@ from selenium import webdriver
 from bs4 import BeautifulSoup
 
 
-def time_to_bus(stop_link, name_bus):
+def name_stop(stop_link, name_bus):
     op = webdriver.ChromeOptions()
     op.add_argument('headless')
     driver = webdriver.Chrome(options=op)
@@ -16,5 +16,5 @@ def time_to_bus(stop_link, name_bus):
             return name_stop, t_to_bus
 
 
-print(time_to_bus('https://yandex.ru/maps/213/moscow/stops/stop__9642091/?ll=37.604492%2C55.633689&tab=overview&z=18.01',
-                  'н8 (ночной)'))
+print(info('https://yandex.ru/maps/213/moscow/stops/stop__9642091/?ll=37.604492%2C55.633689&tab=overview&z=18.01',
+           'н8 (ночной)'))
