@@ -1,22 +1,42 @@
 import telebot
 from telebot import types
 from xml.etree import ElementTree
-from selenium.common.exceptions import InvalidArgumentException
-from selenium import webdriver
 from bs4 import BeautifulSoup
 import config
+from selenium.common.exceptions import InvalidArgumentException
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
+
+op = webdriver.ChromeOptions()
+op.add_argument('headless')
+ChromeDriverManager(path="drivers").install()
+driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=op)
+
+try:
+    tree = ElementTree.parse('users.xml')  # инициализация дерева
+except FileNotFoundError:  # если файла нет
+    with open('users.xml', 'w'):
+        root = ElementTree.Element('User_list')  # создание корня
+        tree = ElementTree.ElementTree(root)  # создание дерева
+        tree.write('users.xml')
+except ElementTree.ParseError:  # если файл пустой
+    root = ElementTree.Element('User_list')  # создание корня
+    tree = ElementTree.ElementTree(root)  # создание дерева
+    tree.write('users.xml')
+user_list = tree.getroot()  # инициализация корня§
 
 
 def name_stop(stop_link):
-    op = webdriver.ChromeOptions()
-    op.add_argument('headless')
-    driver = webdriver.Chrome(options=op)
     try:
         driver.get(stop_link)
     except InvalidArgumentException:
         return None
     soup = BeautifulSoup(driver.page_source, 'lxml')
-    n_stop = soup.find('h1', class_='card-title-view__title').text
+    try:
+        n_stop = soup.find('h1', class_='card-title-view__title').text
+    except AttributeError:
+        return None
     return n_stop
 
 
@@ -25,7 +45,7 @@ bot = telebot.TeleBot(config.token)
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    global tree, user_list
+    global tree, user_list, root
     try:
         tree = ElementTree.parse('users.xml')  # инициализация дерева
     except FileNotFoundError:  # если файла нет
@@ -48,7 +68,7 @@ def start(message):
                     for i, stop in enumerate(user.findall('Stop')):
                         stops += str(i + 1) + ' - ' + ''.join(stop.get('name')) + '\n'
                     keyboard = types.InlineKeyboardMarkup(row_width=1)
-                    buttons = [(types.InlineKeyboardButton(text='Выбрать остановку🚏✅', callback_data='button_select')),
+                    buttons = [(types.InlineKeyboardButton(text='Изменение остановки🚏✅', callback_data='button_select')),
                                (types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='button_add'))]
                     keyboard.add(buttons[0], buttons[1])
                     bot.send_message(message.from_user.id, f'Ваши остановки:\n{stops}', reply_markup=keyboard)
@@ -59,43 +79,51 @@ def start(message):
                 bot.send_message(message.from_user.id, 'У вас нет отслеживаемых остановок', reply_markup=keyboard)
     if s == 0:  # если юзера нет
         ElementTree.SubElement(user_list, 'User', id=str(message.from_user.id))
-        # stop = ElementTree.SubElement(user, 'Stop')
-        # bus = ElementTree.SubElement(stop, 'Bus')
-        # time_before_arrival = ElementTree.SubElement(bus, 'time_before_arrival')
-        # time_interval = ElementTree.SubElement(bus, 'time_interval')
         tree.write('users.xml')
         start(message)
 
 
-add = False
-
-
 @bot.callback_query_handler(func=lambda func: True)
 def callback_button(callback):
-    global add
+    global user_list
     if callback.data == 'button_add':
         bot.send_message(callback.from_user.id, 'Вставьте ссылку на остановку:')
-        add = True
+    if callback.data == 'button_select':
+        for user in user_list:
+            if user.attrib.get('id') == str(callback.from_user.id):
+                if len(user.findall('Stop')) != 0:
+                    keyboard = types.InlineKeyboardMarkup(row_width=1)
+                    for i, stop in enumerate(user.findall('Stop')):
+                        button = types.InlineKeyboardButton(text=str(i + 1) + ' - ' + ''.join(stop.get('name')),
+                                                            callback_data=f'button_selected{i + 1}')
+                        keyboard.add(button)
+                    bot.send_message(callback.from_user.id, 'Выберите остановку:', reply_markup=keyboard)
 
 
 @bot.message_handler(func=lambda m: True)
 def text_handler(message):
-    global add, tree
-    if add:
+    global tree
+    duplicate = False
+    if str(message.text).find('http') != -1:
         bot.send_message(message.from_user.id, 'Ждите...')
-        stop_name = name_stop(message.text)
+        stop_name = name_stop(str(message.text)[str(message.text).find('http'):])
         if stop_name is None:
             bot.send_message(message.from_user.id, 'Ошибка, ссылка неверна, попробуйте снова')
             start(message)
         else:
             for user in user_list:
                 if user.attrib.get('id') == str(message.from_user.id):
-                    stop = ElementTree.SubElement(user, 'Stop')
-                    stop.set('name', stop_name)
-                    stop.set('link', message.text)
-                    tree.write('users.xml', encoding="UTF-8")
+                    for i, stop in enumerate(user.findall('Stop')):
+                        if stop.get('link') == str(message.text)[str(message.text).find('http'):]:
+                            bot.send_message(message.from_user.id, 'Такая остановка уже есть')
+                            duplicate = True
+                    if not duplicate:
+                        stop = ElementTree.SubElement(user, 'Stop')
+                        stop.set('name', stop_name)
+                        stop.set('link', str(message.text)[str(message.text).find('http'):])
+                        tree.write('users.xml', encoding="UTF-8")
+                        duplicate = False
             start(message)
-        add = False
 
 
 bot.infinity_polling()
