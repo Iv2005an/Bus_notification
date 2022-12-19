@@ -24,7 +24,7 @@ except ElementTree.ParseError:  # если файл пустой
     root = ElementTree.Element('User_list')  # создание корня
     tree = ElementTree.ElementTree(root)  # создание дерева
     tree.write('users.xml')
-user_list = tree.getroot()  # инициализация корня§
+user_list = tree.getroot()  # инициализация корня
 
 
 def name_stop(stop_link):
@@ -68,8 +68,9 @@ def start(message):
                     for i, stop in enumerate(user.findall('Stop')):
                         stops += str(i + 1) + ' - ' + ''.join(stop.get('name')) + '\n'
                     keyboard = types.InlineKeyboardMarkup(row_width=1)
-                    buttons = [(types.InlineKeyboardButton(text='Изменение остановки🚏✅', callback_data='button_select')),
-                               (types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='button_add'))]
+                    buttons = [
+                        (types.InlineKeyboardButton(text='Изменение остановки🚏✅', callback_data='button_select')),
+                        (types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='button_add'))]
                     keyboard.add(buttons[0], buttons[1])
                     bot.send_message(message.from_user.id, f'Ваши остановки:\n{stops}', reply_markup=keyboard)
             elif user.find('Stop') is None:
@@ -79,7 +80,7 @@ def start(message):
                 bot.send_message(message.from_user.id, 'У вас нет отслеживаемых остановок', reply_markup=keyboard)
     if s == 0:  # если юзера нет
         ElementTree.SubElement(user_list, 'User', id=str(message.from_user.id))
-        tree.write('users.xml')
+        tree.write('users.xml', encoding="UTF-8")
         start(message)
 
 
@@ -94,10 +95,32 @@ def callback_button(callback):
                 if len(user.findall('Stop')) != 0:
                     keyboard = types.InlineKeyboardMarkup(row_width=1)
                     for i, stop in enumerate(user.findall('Stop')):
-                        button = types.InlineKeyboardButton(text=str(i + 1) + ' - ' + ''.join(stop.get('name')),
-                                                            callback_data=f'button_selected{i + 1}')
-                        keyboard.add(button)
+                        buttons = [(types.InlineKeyboardButton(text=str(i + 1) + ' - ' + ''.join(stop.get('name')),
+                                                               callback_data=f'button_selected_{i}')),
+                                   types.InlineKeyboardButton(text='Назад🔙', callback_data='button_start')]
+                        keyboard.add(buttons[0], buttons[1])
                     bot.send_message(callback.from_user.id, 'Выберите остановку:', reply_markup=keyboard)
+    if str(callback.data)[:16] == 'button_selected_':
+        keyboard = types.InlineKeyboardMarkup(row_width=2)
+        buttons = [(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_select')),
+                   (types.InlineKeyboardButton(text='Удалить остановку🚏➕',
+                                               callback_data=f'button_delete_stop_{str(callback.data)[16:]}'))]
+        keyboard.add(buttons[0], buttons[1])
+        for user in user_list:
+            if user.attrib.get('id') == str(callback.from_user.id):
+                for i, stop in enumerate(user.findall('Stop')):
+                    if str(i) == str(callback.data)[16:]:
+                        bot.send_message(callback.from_user.id, str(stop.get('name')) + ':\n', reply_markup=keyboard)
+    if str(callback.data)[:19] == 'button_delete_stop_':
+        for user in user_list:
+            if user.attrib.get('id') == str(callback.from_user.id):
+                for i, stop in enumerate(user.findall('Stop')):
+                    if str(i) == str(callback.data)[19:]:
+                        user.remove(stop)
+                        tree.write('users.xml', encoding="UTF-8")
+                        start(callback)
+    if callback.data == 'button_start':
+        start(callback)
 
 
 @bot.message_handler(func=lambda m: True)
