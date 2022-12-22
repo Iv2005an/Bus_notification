@@ -7,6 +7,7 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from xml.etree import ElementTree
 from bs4 import BeautifulSoup
 from selenium.common.exceptions import InvalidArgumentException
+import time
 
 bot = telebot.TeleBot(config.token)
 op = webdriver.ChromeOptions()
@@ -86,7 +87,9 @@ def start(message):
 
 @bot.callback_query_handler(func=lambda func: True)
 def callback_button(callback):
-    print(callback.from_user.id, callback.data)
+    with open('log_callback_button.log', 'a') as file:
+        file.write(str(time.strftime("%H:%M:%S", time.localtime())) + ' ' +
+                   str(callback.from_user.id) + ' ' + str(callback.data) + '\n')
     if callback.data == 'button_start':
         for user in user_list:  # пошагово по юзерам
             if user.attrib.get('id') == str(callback.from_user.id):  # нахождение текущего юзера
@@ -126,7 +129,7 @@ def callback_button(callback):
     elif str(callback.data)[:20] == 'button_stop_selected':
         keyboard = types.InlineKeyboardMarkup(row_width=2)
         buttons = [(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_stop_select')),
-                   (types.InlineKeyboardButton(text='Удалить остановку✖️',
+                   (types.InlineKeyboardButton(text='Удалить остановку➖',
                                                callback_data=f'button_stop_delete{str(callback.data)[20:]}'))]
         keyboard.add(buttons[0], buttons[1])
         for user in user_list:
@@ -193,7 +196,7 @@ def callback_button(callback):
                             if not duplicate:
                                 keyboard.add(types.InlineKeyboardButton
                                              (text=buses_from_stop[b_i].text,
-                                              callback_data=f'button_bus_selected_to_add{s_i} {bus_from_stop.text}'))
+                                              callback_data=f'button_bus_selected_to_add{s_i, bus_from_stop.text}'))
                             duplicate = False
                         keyboard.add(types.InlineKeyboardButton(text='Назад🔙',
                                                                 callback_data=f'button_stop_selected{s_i}'))
@@ -244,11 +247,14 @@ def callback_button(callback):
                     if str(s_i) == s:
                         for b_i, bus in enumerate(stop.findall('Bus')):
                             keyboard.add(types.InlineKeyboardButton(text=bus.get('name'),
-                                                                    callback_data=f'button_bus_selected_to_setting{b_i}'))
+                                                                    callback_data=f'button_bus_selected_to_setting{s_i, b_i}'))
                         keyboard.add(
                             types.InlineKeyboardButton(text='Назад🔙', callback_data=f'button_stop_selected{s_i}'))
                         bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                               text='Выберите автобус:', reply_markup=keyboard)
+    elif str(callback.data)[:30] == 'button_bus_selected_to_setting':
+        s = str(callback.data)[26:str(callback.data).find(' ')]
+        b = str(callback.data)[str(callback.data).rfind(' ') + 1:]
 
 
 @bot.message_handler(func=lambda m: True)
