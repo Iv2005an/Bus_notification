@@ -87,7 +87,7 @@ def start(message):
 
 @bot.callback_query_handler(func=lambda func: True)
 def callback_button(callback):
-    with open('log_callback_button.log', 'a') as file:
+    with open('log_callback_button.log', 'a', encoding='utf-8') as file:
         file.write(str(time.strftime("%H:%M:%S", time.localtime())) + ' ' +
                    str(callback.from_user.id) + ' ' + str(callback.data) + '\n')
     if callback.data == 'button_start':
@@ -137,7 +137,27 @@ def callback_button(callback):
                 for s_i, stop in enumerate(user.findall('Stop')):
                     if str(s_i) == str(callback.data)[20:]:
                         buses = ''
-                        if stop.find('Bus') is None:
+                        bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
+                                              text='Пожалуйста подождите...')
+                        buses_from_stop = buses_list(stop.get('link'))
+                        all_bus = True
+                        duplicate = False
+                        for bus_from_stop in buses_from_stop:
+                            for bus in stop.findall('Bus'):
+                                if bus.get('name') == bus_from_stop.text:
+                                    duplicate = True
+                                    break
+                            if duplicate:
+                                duplicate = False
+                            else:
+                                all_bus = False
+                                break
+                        if all_bus:
+                            for bus in stop.findall('Bus'):
+                                buses += bus.get('name') + '\n'
+                            keyboard.add(types.InlineKeyboardButton(text='Выбрать автобус🚌✔️',
+                                                                    callback_data=f'button_bus_select{s_i}'))
+                        elif stop.find('Bus') is None:
                             keyboard.add(types.InlineKeyboardButton(text='Добавить автобус🚌➕',
                                                                     callback_data=f'button_bus_add{s_i}'))
                         elif stop.find('Bus') is not None:
