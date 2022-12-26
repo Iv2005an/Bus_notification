@@ -67,7 +67,6 @@ user_list = tree.getroot()  # инициализация корня
 def name_stop(stop_link):
     try:
         response = session.request('GET', stop_link, headers=headers)
-        print(response.url)
     except Exception:
         return None
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -89,6 +88,16 @@ def buses_list(stop_link):
     except AttributeError:
         return None
     return buses
+
+
+def time_to_bus(stop_link, name_bus):
+    response = session.request('GET', stop_link, headers=headers)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    buses = soup.find_all(class_='masstransit-vehicle-snippet-view__main-text')
+    for bus in buses:
+        if bus.text == name_bus:
+            t_to_bus = bus.find_next(class_='masstransit-prognoses-view__title-text').text
+            return t_to_bus
 
 
 @bot.message_handler(commands=['start'])
@@ -314,6 +323,19 @@ def callback_button(callback):
                             keyboard.add(buttons[0], buttons[1])
                         bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                               text=str(stop.get('name')) + ':\n' + buses, reply_markup=keyboard)
+    elif str(callback.data)[:30] == 'button_bus_selected_to_setting':
+        s = str(callback.data)[30:str(callback.data).find(' ')]
+        b = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+        for user in user_list:
+            if user.attrib.get('id') == str(callback.from_user.id):
+                for s_i, stop in enumerate(user.findall('Stop')):
+                    if str(s_i) == s:
+                        for b_i, bus in enumerate(stop.findall('Bus')):
+                            if str(b_i) == b:
+                                t_to_bus = time_to_bus(stop.get('link'), bus.get('name'))
+                                bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
+                                                      text=f'{bus.get("name")} будет через: {t_to_bus}.')
+        start(callback)
     elif str(callback.data)[:17] == 'button_bus_select':
         s = str(callback.data)[17:]
         for user in user_list:
@@ -328,23 +350,20 @@ def callback_button(callback):
                             types.InlineKeyboardButton(text='Назад🔙', callback_data=f'button_stop_selected{s_i}'))
                         bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                               text='Выберите автобус:', reply_markup=keyboard)
-    elif str(callback.data)[:30] == 'button_bus_selected_to_setting':
-        s = str(callback.data)[26:str(callback.data).find(' ')]
-        b = str(callback.data)[str(callback.data).rfind(' ') + 1:]
 
 
 @bot.message_handler(func=lambda m: True)
 def text_handler(message):
     global tree
     if str(message.text).find('yandex.ru/maps') != -1:
+        bot.send_message(message.from_user.id, 'Пожалуйста подождите...')
         duplicate = False
         link = str(message.text)[str(message.text).find('http'):]
-        bot.send_message(message.from_user.id, 'Пожалуйста подождите...')
-        if link.find('/org/') != -1 or link.find('/-/') != -1:
-            r = session.request('GET', link, headers=headers)
-            link = r.url
-            print(link)
+        r = session.request('GET', link, headers=headers)
+        time.sleep(5)
+        link = r.url
         if link.find('/stops/') != -1:
+            link = link[:link.rfind('/stop__') + 14]
             stop_name = name_stop(link[link.find('http'):])
             if stop_name is None:
                 bot.edit_message_text(chat_id=message.from_user.id, message_id=message.id + 1,
@@ -368,6 +387,7 @@ def text_handler(message):
         else:
             bot.edit_message_text(chat_id=message.from_user.id, message_id=message.id + 1,
                                   text='Ошибка, ссылка не ведёт на остановку, попробуйте снова')
+            print(link)
             start(message)
 
 
