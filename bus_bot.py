@@ -1,19 +1,37 @@
 import telebot
 from telebot import types
 import config
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service as ChromeService
 from xml.etree import ElementTree
 from bs4 import BeautifulSoup
-from selenium.common.exceptions import InvalidArgumentException
 import time
+import ssl
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.poolmanager import PoolManager
+from urllib3.util import ssl_
 
+CIPHERS = """ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:AES256-SHA"""
+
+
+class TlsAdapter(HTTPAdapter):
+
+    def __init__(self, ssl_options=0, **kwargs):
+        self.ssl_options = ssl_options
+        super(TlsAdapter, self).__init__(**kwargs)
+
+    def init_poolmanager(self, *pool_args, **pool_kwargs):
+        ctx = ssl_.create_urllib3_context(ciphers=CIPHERS, cert_reqs=ssl.CERT_REQUIRED, options=self.ssl_options)
+        self.poolmanager = PoolManager(*pool_args, ssl_context=ctx, **pool_kwargs)
+
+
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 YaBrowser/22.11.3.823 Yowser/2.5 Safari/537.36',
+    'referer': 'https://yandex.ru/'
+}
+session = requests.session()
+adapter = TlsAdapter(ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
+session.mount("https://", adapter)
 bot = telebot.TeleBot(config.token)
-op = webdriver.ChromeOptions()
-op.add_argument('headless')
-ChromeDriverManager(path="drivers").install()
-driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=op)
 
 try:
     tree = ElementTree.parse('users.xml')  # инициализация дерева
@@ -31,10 +49,11 @@ user_list = tree.getroot()  # инициализация корня
 
 def name_stop(stop_link):
     try:
-        driver.get(stop_link)
-    except InvalidArgumentException:
+        response = session.request('GET', stop_link, headers=headers)
+        print(response.url)
+    except Exception:
         return None
-    soup = BeautifulSoup(driver.page_source, 'lxml')
+    soup = BeautifulSoup(response.text, 'html.parser')
     try:
         n_stop = soup.find('h1', class_='card-title-view__title').text
     except AttributeError:
@@ -44,10 +63,10 @@ def name_stop(stop_link):
 
 def buses_list(stop_link):
     try:
-        driver.get(stop_link)
-    except InvalidArgumentException:
+        response = session.request('GET', stop_link, headers=headers)
+    except Exception:
         return None
-    soup = BeautifulSoup(driver.page_source, 'lxml')
+    soup = BeautifulSoup(response.text, 'html.parser')
     try:
         buses = soup.find_all(class_='masstransit-vehicle-snippet-view__main-text')
     except AttributeError:
@@ -305,8 +324,9 @@ def text_handler(message):
         link = str(message.text)[str(message.text).find('http'):]
         bot.send_message(message.from_user.id, 'Пожалуйста подождите...')
         if link.find('/org/') != -1 or link.find('/-/') != -1:
-            driver.get(link)
-            link = driver.current_url
+            r = session.request('GET', link, headers=headers)
+            link = r.url
+            print(link)
         if link.find('/stops/') != -1:
             stop_name = name_stop(link[link.find('http'):])
             if stop_name is None:
@@ -334,4 +354,4 @@ def text_handler(message):
             start(message)
 
 
-bot.polling()
+bot.infinity_polling()
