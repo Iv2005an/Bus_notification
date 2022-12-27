@@ -180,20 +180,20 @@ def callback_button(callback):
                 keyboard = types.InlineKeyboardMarkup(row_width=1)
                 for s_i, stop in enumerate(user.findall('Stop')):
                     keyboard.add((types.InlineKeyboardButton(text=stop.get('name'),
-                                                             callback_data=f'button_stop_selected{s_i}')))
+                                                             callback_data=f'button_stop_selected {s_i}')))
                 keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_start'))
                 bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                       text='Выберите остановку:', reply_markup=keyboard)
-    elif str(callback.data)[:20] == 'button_stop_selected':
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'button_stop_selected':
         keyboard = types.InlineKeyboardMarkup(row_width=2)
         buttons = [(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_stop_select')),
                    (types.InlineKeyboardButton(text='Удалить остановку➖',
-                                               callback_data=f'button_stop_delete{str(callback.data)[20:]}'))]
+                                               callback_data=f'button_stop_delete {str(callback.data)[str(callback.data).find(" ") + 1:]}'))]
         keyboard.add(buttons[0], buttons[1])
         for user in user_list:
             if user.attrib.get('id') == str(callback.from_user.id):
                 for s_i, stop in enumerate(user.findall('Stop')):
-                    if str(s_i) == str(callback.data)[20:]:
+                    if str(s_i) == str(callback.data)[str(callback.data).find(' ') + 1:]:
                         buses = ''
                         bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                               text='Пожалуйста подождите...')
@@ -214,25 +214,25 @@ def callback_button(callback):
                             for bus in stop.findall('Bus'):
                                 buses += bus.get('name') + '\n'
                             keyboard.add(types.InlineKeyboardButton(text='Выбрать автобус🚌✔️',
-                                                                    callback_data=f'button_bus_select{s_i}'))
+                                                                    callback_data=f'button_bus_select {s_i}'))
                         elif stop.find('Bus') is None:
                             keyboard.add(types.InlineKeyboardButton(text='Добавить автобус🚌➕',
-                                                                    callback_data=f'button_bus_add{s_i}'))
+                                                                    callback_data=f'button_bus_add {s_i}'))
                         elif stop.find('Bus') is not None:
                             for bus in stop.findall('Bus'):
                                 buses += bus.get('name') + '\n'
                             buttons = [(types.InlineKeyboardButton(text='Выбрать автобус🚌✔️',
-                                                                   callback_data=f'button_bus_select{s_i}')),
+                                                                   callback_data=f'button_bus_select {s_i}')),
                                        types.InlineKeyboardButton(text='Добавить автобус🚌➕',
-                                                                  callback_data=f'button_bus_add{s_i}')]
+                                                                  callback_data=f'button_bus_add {s_i}')]
                             keyboard.add(buttons[0], buttons[1])
                         bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                               text=str(stop.get('name')) + ':\n' + buses, reply_markup=keyboard)
-    elif str(callback.data)[:18] == 'button_stop_delete':
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'button_stop_delete':
         for user in user_list:
             if user.attrib.get('id') == str(callback.from_user.id):
                 for s_i, stop in enumerate(user.findall('Stop')):
-                    if str(s_i) == str(callback.data)[18:]:
+                    if str(s_i) == str(callback.data)[str(callback.data).find(' ') + 1:]:
                         user.remove(stop)
                         tree.write('users.xml', encoding="UTF-8")
                         if user.find('Stop') is not None:
@@ -257,11 +257,11 @@ def callback_button(callback):
                             bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                                   text='У вас нет отслеживаемых остановок',
                                                   reply_markup=keyboard)
-    elif str(callback.data)[:14] == 'button_bus_add':
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'button_bus_add':
         for user in user_list:
             if user.attrib.get('id') == str(callback.from_user.id):
                 for s_i, stop in enumerate(user.findall('Stop')):
-                    if str(s_i) == str(callback.data)[14:]:
+                    if str(s_i) == str(callback.data)[str(callback.data).find(' ') + 1:]:
                         bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                               text='Пожалуйста подождите...')
                         buses_from_stop = buses_list(stop.get('link'))
@@ -274,23 +274,24 @@ def callback_button(callback):
                             if not duplicate:
                                 keyboard.add(types.InlineKeyboardButton
                                              (text=buses_from_stop[b_i].text,
-                                              callback_data=f'button_bus_selected_to_add{s_i} {bus_from_stop.text}'))
+                                              callback_data=f'button_bus_selected_to_add {s_i} {bus_from_stop.text}'))
                             duplicate = False
                         keyboard.add(types.InlineKeyboardButton(text='Назад🔙',
-                                                                callback_data=f'button_stop_selected{s_i}'))
+                                                                callback_data=f'button_stop_selected {s_i}'))
                         buses = ''
                         for bus in stop.findall('Bus'):
                             buses += bus.get('name') + '\n'
                         bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                               text=f'{stop.get("name")}:\n{buses}Выберите автобус:',
                                               reply_markup=keyboard)
-    elif str(callback.data)[:26] == 'button_bus_selected_to_add':
-        s = str(callback.data)[26:str(callback.data).find(' ')]
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'button_bus_selected_to_add':
+        s = str(callback.data)[
+            str(callback.data).find(' ') + 1:str(callback.data).find(' ', str(callback.data).find(' ') + 1)]
         bus_name = str(callback.data)[str(callback.data).rfind(' ') + 1:]
         keyboard = types.InlineKeyboardMarkup(row_width=2)
         buttons = [(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_stop_select')),
                    (types.InlineKeyboardButton(text='Удалить остановку➖',
-                                               callback_data=f'button_stop_delete{str(callback.data)[20:]}'))]
+                                               callback_data=f'button_stop_delete {s}'))]
         keyboard.add(buttons[0], buttons[1])
         for user in user_list:
             if user.attrib.get('id') == str(callback.from_user.id):
@@ -319,23 +320,38 @@ def callback_button(callback):
                             for bus in stop.findall('Bus'):
                                 buses += bus.get('name') + '\n'
                             keyboard.add(types.InlineKeyboardButton(text='Выбрать автобус🚌✔️',
-                                                                    callback_data=f'button_bus_select{s_i}'))
+                                                                    callback_data=f'button_bus_select {s_i}'))
                         elif stop.find('Bus') is None:
                             keyboard.add(types.InlineKeyboardButton(text='Добавить автобус🚌➕',
-                                                                    callback_data=f'button_bus_add{s_i}'))
+                                                                    callback_data=f'button_bus_add {s_i}'))
                         elif stop.find('Bus') is not None:
                             for bus in stop.findall('Bus'):
                                 buses += bus.get('name') + '\n'
                             buttons = [(types.InlineKeyboardButton(text='Выбрать автобус🚌✔️',
-                                                                   callback_data=f'button_bus_select{s_i}')),
+                                                                   callback_data=f'button_bus_select {s_i}')),
                                        types.InlineKeyboardButton(text='Добавить автобус🚌➕',
-                                                                  callback_data=f'button_bus_add{s_i}')]
+                                                                  callback_data=f'button_bus_add {s_i}')]
                             keyboard.add(buttons[0], buttons[1])
                         bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                               text=str(stop.get('name')) + ':\n' + buses, reply_markup=keyboard)
-    elif str(callback.data)[:30] == 'button_bus_selected_to_setting':
-        s = str(callback.data)[30:str(callback.data).find(' ')]
-        b = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'button_bus_select':
+        s = str(callback.data)[str(callback.data).find(' ') + 1:]
+        for user in user_list:
+            if user.attrib.get('id') == str(callback.from_user.id):
+                keyboard = types.InlineKeyboardMarkup(row_width=1)
+                for s_i, stop in enumerate(user.findall('Stop')):
+                    if str(s_i) == s:
+                        for b_i, bus in enumerate(stop.findall('Bus')):
+                            keyboard.add(types.InlineKeyboardButton(text=bus.get('name'),
+                                                                    callback_data=f'button_bus_selected_to_setting {s_i} {b_i}'))
+                        keyboard.add(
+                            types.InlineKeyboardButton(text='Назад🔙', callback_data=f'button_stop_selected {s_i}'))
+                        bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
+                                              text='Выберите автобус:', reply_markup=keyboard)
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'button_bus_selected_to_setting':
+        s = str(callback.data)[
+            str(callback.data).find(' ') + 1:str(callback.data).find(' ', str(callback.data).find(' ') + 1)]
+        b = str(callback.data)[str(callback.data).find(' ', str(callback.data).find(' ') + 1) + 1:]
         for user in user_list:
             if user.attrib.get('id') == str(callback.from_user.id):
                 for s_i, stop in enumerate(user.findall('Stop')):
@@ -346,20 +362,6 @@ def callback_button(callback):
                                 bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                                       text=f'{bus.get("name")} будет через: {t_to_bus}.')
         start(callback)
-    elif str(callback.data)[:17] == 'button_bus_select':
-        s = str(callback.data)[17:]
-        for user in user_list:
-            if user.attrib.get('id') == str(callback.from_user.id):
-                keyboard = types.InlineKeyboardMarkup(row_width=1)
-                for s_i, stop in enumerate(user.findall('Stop')):
-                    if str(s_i) == s:
-                        for b_i, bus in enumerate(stop.findall('Bus')):
-                            keyboard.add(types.InlineKeyboardButton(text=bus.get('name'),
-                                                                    callback_data=f'button_bus_selected_to_setting{s_i} {b_i}'))
-                        keyboard.add(
-                            types.InlineKeyboardButton(text='Назад🔙', callback_data=f'button_stop_selected{s_i}'))
-                        bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
-                                              text='Выберите автобус:', reply_markup=keyboard)
 
 
 @bot.message_handler(func=lambda m: True)
