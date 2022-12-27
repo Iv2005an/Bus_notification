@@ -66,7 +66,6 @@ user_list = tree.getroot()  # инициализация корня
 def name_stop(stop_link):
     try:
         response = session.get(stop_link, headers=headers)
-        response.encoding = 'utf-8'
     except Exception:
         return None
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -80,7 +79,6 @@ def name_stop(stop_link):
 def buses_list(stop_link):
     try:
         response = session.get(stop_link, headers=headers)
-        response.encoding = 'utf-8'
     except Exception:
         return None
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -93,7 +91,6 @@ def buses_list(stop_link):
 
 def time_to_bus(stop_link, name_bus):
     response = session.get(stop_link, headers=headers)
-    response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, 'html.parser')
     buses = soup.find_all(class_='masstransit-vehicle-snippet-view__main-text')
     for bus in buses:
@@ -376,7 +373,6 @@ def text_handler(message):
         link = str(message.text)[str(message.text).find('http'):]
         if link.find('/stops/') == -1:
             response = session.get(link, headers=headers)
-            response.encoding = 'utf-8'
             link = long_link(response)
         if link.find('/stops/') != -1:
             link = link[:link.find('/', link.find('stop__')) + 1]
