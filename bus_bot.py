@@ -106,7 +106,7 @@ def long_link(response):
     for s, script in enumerate(scripts):
         if s == 1:
             link = str(script)[str(script).find('<link rel="canonical" href="') + 28:
-                               str(script).find('"', str(script).find('<link rel="canonical" href="') + 28)]
+                               str(script).find('"', str(script).find('<link rel="canonical" href="') + 28) + 1]
             return link
 
 
@@ -375,7 +375,7 @@ def text_handler(message):
             response = session.get(link, headers=headers)
             link = long_link(response)
         if link.find('/stops/') != -1:
-            link = link[:link.find('/', link.find('stop__'))]
+            link = link[:link.find('/', link.find('stop__')) + 1]
             stop_name = name_stop(link[link.find('http'):])
             if stop_name is None:
                 bot.edit_message_text(chat_id=message.from_user.id, message_id=message.id + 1,
