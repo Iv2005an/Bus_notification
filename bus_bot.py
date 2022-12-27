@@ -359,7 +359,6 @@ def text_handler(message):
         duplicate = False
         link = str(message.text)[str(message.text).find('http'):]
         r = session.request('GET', link, headers=headers)
-        time.sleep(5)
         link = r.url
         if link.find('/stops/') != -1:
             link = link[:link.rfind('/stop__') + 14]

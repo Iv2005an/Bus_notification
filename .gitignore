@@ -1,4 +1,5 @@
 .DS_Store
+test.py
 drivers/
 config.py
 # Byte-compiled / optimized / DLL files
