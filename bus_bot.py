@@ -65,7 +65,7 @@ user_list = tree.getroot()  # инициализация корня
 
 def name_stop(stop_link):
     try:
-        response = session.request('GET', stop_link, headers=headers)
+        response = session.get(stop_link, headers=headers)
     except Exception:
         return None
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -78,7 +78,7 @@ def name_stop(stop_link):
 
 def buses_list(stop_link):
     try:
-        response = session.request('GET', stop_link, headers=headers)
+        response = session.get(stop_link, headers=headers)
     except Exception:
         return None
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -90,13 +90,24 @@ def buses_list(stop_link):
 
 
 def time_to_bus(stop_link, name_bus):
-    response = session.request('GET', stop_link, headers=headers)
+    response = session.get(stop_link, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
     buses = soup.find_all(class_='masstransit-vehicle-snippet-view__main-text')
     for bus in buses:
         if bus.text == name_bus:
             t_to_bus = bus.find_next(class_='masstransit-prognoses-view__title-text').text
             return t_to_bus
+
+
+def long_link(response):
+    soup = BeautifulSoup(response.text, 'html.parser')
+    body = soup.find('body')
+    scripts = body.find_all(name='script', type='text/javascript')
+    for s, script in enumerate(scripts):
+        if s == 1:
+            link = str(script)[str(script).find('<link rel="canonical" href="') + 28:
+                               str(script).find('"', str(script).find('<link rel="canonical" href="') + 28)]
+            return link
 
 
 @bot.message_handler(commands=['start'])
@@ -354,14 +365,15 @@ def callback_button(callback):
 @bot.message_handler(func=lambda m: True)
 def text_handler(message):
     global tree
-    if str(message.text).find('yandex.ru/maps') != -1:
+    if str(message.text).find('yandex.ru/maps/') != -1:
         bot.send_message(message.from_user.id, 'Пожалуйста подождите...')
         duplicate = False
         link = str(message.text)[str(message.text).find('http'):]
-        r = session.request('GET', link, headers=headers)
-        link = r.url
+        if link.find('/stops/') == -1:
+            response = session.get(link, headers=headers)
+            link = long_link(response)
         if link.find('/stops/') != -1:
-            link = link[:link.rfind('/stop__') + 14]
+            link = link[:link.find('/', link.find('stop__'))]
             stop_name = name_stop(link[link.find('http'):])
             if stop_name is None:
                 bot.edit_message_text(chat_id=message.from_user.id, message_id=message.id + 1,
@@ -385,7 +397,6 @@ def text_handler(message):
         else:
             bot.edit_message_text(chat_id=message.from_user.id, message_id=message.id + 1,
                                   text='Ошибка, ссылка не ведёт на остановку, попробуйте снова')
-            print(link)
             start(message)
 
 
