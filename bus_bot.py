@@ -1,6 +1,7 @@
 import telebot
 from telebot import types
 import config
+import sqlite3
 from xml.etree import ElementTree
 from bs4 import BeautifulSoup
 import time
@@ -9,6 +10,9 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.poolmanager import PoolManager
 from urllib3.util import ssl_
+
+with sqlite3.connect('users.db') as db:
+    pass
 
 CIPHERS = """ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:AES256-SHA"""
 
@@ -55,11 +59,11 @@ except FileNotFoundError:  # если файла нет
     with open('users.xml', 'w'):
         root = ElementTree.Element('User_list')  # создание корня
         tree = ElementTree.ElementTree(root)  # создание дерева
-        tree.write('users.xml')
+        tree.write('users.xml', encoding="UTF-8")
 except ElementTree.ParseError:  # если файл пустой
     root = ElementTree.Element('User_list')  # создание корня
     tree = ElementTree.ElementTree(root)  # создание дерева
-    tree.write('users.xml')
+    tree.write('users.xml', encoding="UTF-8")
 user_list = tree.getroot()  # инициализация корня
 
 

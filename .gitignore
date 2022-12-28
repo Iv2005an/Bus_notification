@@ -156,3 +156,5 @@ cython_debug/
 .idea/
 *.xml
 test.py
+users.db
+*.xlsx
