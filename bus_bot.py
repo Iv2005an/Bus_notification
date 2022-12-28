@@ -71,7 +71,6 @@ def start(message):
     with sqlite3.connect("users.db") as database:  # создание бд
         cursor = database.cursor()
         user_stops = cursor.execute(f"""SELECT stop_name FROM users WHERE user_id={message.from_user.id}""").fetchall()
-        print(user_stops)
         if len(user_stops) != 0:
             stops = ''
             for i, stop in enumerate(user_stops):
@@ -121,16 +120,18 @@ def callback_button(callback):
         keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_start'))
         bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                               text='Вставьте ссылку на остановку', reply_markup=keyboard)
-    # elif callback.data == 'button_stop_select':
-    #     for user in user_list:
-    #         if user.attrib.get('id') == str(callback.from_user.id):
-    #             keyboard = types.InlineKeyboardMarkup(row_width=1)
-    #             for s_i, stop in enumerate(user.findall('Stop')):
-    #                 keyboard.add((types.InlineKeyboardButton(text=stop.get('name'),
-    #                                                          callback_data=f'button_stop_selected {s_i}')))
-    #             keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_start'))
-    #             bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
-    #                                   text='Выберите остановку:', reply_markup=keyboard)
+    elif callback.data == 'button_stop_select':
+        with sqlite3.connect("users.db") as database:  # создание бд
+            cursor = database.cursor()
+            user_stops = cursor.execute(
+                f"""SELECT stop_name FROM users WHERE user_id={callback.from_user.id}""").fetchall()
+            keyboard = types.InlineKeyboardMarkup(row_width=1)
+            for s_i, stop in enumerate(user_stops):
+                keyboard.add((types.InlineKeyboardButton(text=stop[0],
+                                                         callback_data=f'button_stop_selected {s_i}')))
+            keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_start'))
+            bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
+                                  text='Выберите остановку:', reply_markup=keyboard)
     # elif str(callback.data)[:str(callback.data).find(' ')] == 'button_stop_selected':
     #     keyboard = types.InlineKeyboardMarkup(row_width=2)
     #     buttons = [(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_stop_select')),
@@ -320,10 +321,11 @@ def text_handler(message):
             response = session.get(link, headers=headers)
             link = long_link(response)
         if link.find('/stops/') != -1:
-            link = link[:link.find('/', link.find('stop__')) + 1]
+            link = link[:link.find('/', link.find('/stops/') + 7) + 1]
             stop_name = name_stop(link)
             if stop_name is None:
-                bot.edit_message_text(text='Ошибка, ссылка неверна, попробуйте снова', chat_id=message.from_user.id,
+                bot.edit_message_text(text=f'Ошибка, ссылка неверна, попробуйте снова',
+                                      chat_id=message.from_user.id,
                                       message_id=message.id + 1)
                 start(message)
             elif stop_name is not None:
