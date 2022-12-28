@@ -1,7 +1,6 @@
 import telebot
 from telebot import types
 import config
-import sqlite3
 from xml.etree import ElementTree
 from bs4 import BeautifulSoup
 import time
@@ -10,9 +9,6 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.poolmanager import PoolManager
 from urllib3.util import ssl_
-
-with sqlite3.connect('users.db') as db:
-    pass
 
 CIPHERS = """ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:AES256-SHA"""
 
