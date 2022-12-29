@@ -49,14 +49,14 @@ def transport_list(stop_link):
     return vehicles
 
 
-def time_to_bus(stop_link, name_bus):
+def time_to_transport(stop_link, transport_name):
     response = session.get(stop_link, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
-    buses = soup.find_all(class_='masstransit-vehicle-snippet-view__main-text')
-    for bus in buses:
-        if bus.text == name_bus:
-            t_to_bus = bus.find_next(class_='masstransit-prognoses-view__title-text').text
-            return t_to_bus
+    vehicles = soup.find_all(class_='masstransit-vehicle-snippet-view__main-text')
+    for transport in vehicles:
+        if transport.text == transport_name:
+            t_to_transport = transport.find_next(class_='masstransit-prognoses-view__title-text').text
+            return t_to_transport
 
 
 def long_link(response):
@@ -147,7 +147,7 @@ def callback_button(callback):
                     FROM users
                     WHERE user_id={callback.from_user.id}""").fetchall()):
                 if str(s_i) == str(callback.data)[str(callback.data).find(' ') + 1:]:
-                    text = str(cursor.execute(f"""SELECT DISTINCT stop_name
+                    schedule = str(cursor.execute(f"""SELECT DISTINCT stop_name
                     FROM users
                     WHERE user_id={callback.from_user.id}
                     AND stop_link='{stop[0]}'""").fetchall()[0][0])
@@ -157,9 +157,9 @@ def callback_button(callback):
                     AND stop_link='{stop[0]}'
                     AND transport_name!='NULL'""").fetchall()
                     if len(transport_names) != 0:
-                        text += ':'
+                        schedule += ':'
                         for transport in transport_names:
-                            text += f'\n{transport[0]} - {time_to_bus(stop[0], transport[0])}'
+                            schedule += f'\n{transport[0]} - {time_to_transport(stop[0], transport[0])}'
                     keyboard = types.InlineKeyboardMarkup(row_width=2)
                     keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_stop_select'),
                                  types.InlineKeyboardButton(text='Удалить остановку➖',
@@ -170,19 +170,19 @@ def callback_button(callback):
                         user_stop_transport.sort()
                         if str(transport_at_stop).strip('[]') in str(user_stop_transport).strip('[]'):
                             keyboard.add(types.InlineKeyboardButton(text='Выбрать автобус🚌✔️',
-                                                                    callback_data=f'button_bus_add {s_i}'))
+                                                                    callback_data=f'button_transport_add {s_i}'))
                         else:
                             keyboard.add(types.InlineKeyboardButton(text='Выбрать автобус🚌✔️',
-                                                                    callback_data=f'button_bus_add {s_i}'),
+                                                                    callback_data=f'button_transport_add {s_i}'),
                                          types.InlineKeyboardButton(text='Добавить автобус🚌➕',
-                                                                    callback_data=f'button_bus_add {s_i}'))
+                                                                    callback_data=f'button_transport_add {s_i}'))
                         keyboard.add(types.InlineKeyboardButton(text='Обновить🔄️',
                                                                 callback_data=f'button_stop_selected {s_i}'))
                     else:
                         keyboard.add(types.InlineKeyboardButton(text='Добавить автобус🚌➕',
-                                                                callback_data=f'button_bus_add {s_i}'))
+                                                                callback_data=f'button_transport_add {s_i}'))
                     try:
-                        bot.edit_message_text(text=text, chat_id=callback.from_user.id,
+                        bot.edit_message_text(text=schedule, chat_id=callback.from_user.id,
                                               message_id=callback.message.id, reply_markup=keyboard)
                     except telebot.apihelper.ApiTelegramException:
                         pass
@@ -201,7 +201,9 @@ def callback_button(callback):
                     callback.data = 'button_start'
                     callback_button(callback)
                     break
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'button_transport_add':
 
+        pass
     # elif str(callback.data)[:str(callback.data).find(' ')] == 'button_bus_add':
     #     for user in user_list:
     #         if user.attrib.get('id') == str(callback.from_user.id):
