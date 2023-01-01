@@ -36,7 +36,8 @@ def name_stop(stop_link):
 def transport_list(stop_link):
     try:
         response = session.get(stop_link, headers=headers)
-    except Exception:
+    except Exception as e:
+        print(e)
         return None
     soup = BeautifulSoup(response.text, 'html.parser')
     try:
@@ -60,6 +61,7 @@ def time_to_transport(stop_link, transport_name):
 
 
 def long_link(response):
+    print(response.url)
     soup = BeautifulSoup(response.text, 'html.parser')
     body = soup.find('body')
     scripts = body.find_all(name='script', type='text/javascript')
@@ -151,22 +153,22 @@ def callback_button(callback):
                     FROM users
                     WHERE user_id={callback.from_user.id}
                     AND stop_link='{stop[0]}'""").fetchall()[0][0])
-                    transport_names = cursor.execute(f"""SELECT transport_name
+                    transport_from_database = cursor.execute(f"""SELECT transport_name
                     FROM users
                     WHERE user_id={callback.from_user.id}
                     AND stop_link='{stop[0]}'
                     AND transport_name!='NULL'""").fetchall()
-                    if len(transport_names) != 0:
+                    if len(transport_from_database) != 0:
                         schedule += ':'
-                        for transport in transport_names:
+                        for transport in transport_from_database:
                             schedule += f'\n{transport[0]} - {time_to_transport(stop[0], transport[0])}'
                     keyboard = types.InlineKeyboardMarkup(row_width=2)
                     keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_stop_select'),
                                  types.InlineKeyboardButton(text='Удалить остановку➖',
                                                             callback_data=f'button_stop_delete {s_i}'))
-                    if len(transport_names) != 0:
+                    if len(transport_from_database) != 0:
                         transport_at_stop = transport_list(stop[0])
-                        user_stop_transport = [str(vehicle[0]) for vehicle in transport_names]
+                        user_stop_transport = [str(vehicle[0]) for vehicle in transport_from_database]
                         user_stop_transport.sort()
                         if str(transport_at_stop).strip('[]') in str(user_stop_transport).strip('[]'):
                             keyboard.add(types.InlineKeyboardButton(text='Выбрать автобус🚌✔️',
@@ -196,14 +198,39 @@ def callback_button(callback):
                     WHERE user_id={callback.from_user.id}""").fetchall()):
                 if str(s_i) == str(callback.data)[str(callback.data).find(' ') + 1:]:
                     cursor.execute(
-                        F"""DELETE FROM users WHERE user_id={callback.from_user.id} AND stop_link='{stop[0]}'""")
+                        f"""DELETE FROM users WHERE user_id={callback.from_user.id} AND stop_link='{stop[0]}'""")
                     database.commit()
                     callback.data = 'button_start'
                     callback_button(callback)
                     break
     elif str(callback.data)[:str(callback.data).find(' ')] == 'button_transport_add':
-
-        pass
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            bot.send_message(callback.from_user.id, 'Пожалуйста подождите...')
+            for s_i, stop in enumerate(cursor.execute(
+                    f"""SELECT DISTINCT stop_link
+                    FROM users
+                    WHERE user_id={callback.from_user.id}""").fetchall()):
+                if str(s_i) == str(callback.data)[str(callback.data).find(' ') + 1:]:
+                    transport_from_stop = transport_list(stop[0])
+                    transport_from_database = cursor.execute(
+                        f"""SELECT DISTINCT transport_name
+                        FROM users
+                        WHERE user_id={callback.from_user.id}
+                        AND stop_link='{stop[0]}'""").fetchall()
+                    transport_from_database = [str(vehicle[0]) for vehicle in transport_from_database]
+                    transport_from_database.sort()
+                    keyboard = types.InlineKeyboardMarkup(row_width=1)
+                    if transport_from_database[0][0] is None:
+                        for transport in transport_from_stop:
+                            keyboard.add(types.InlineKeyboardButton(text=transport,
+                                                                    callback_data=f'transport_selected_to_add {transport}'))
+                    print(transport_from_stop)
+                    print(transport_from_database)
+                    keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data=f'button_stop_selected {s_i}'))
+                    bot.edit_message_text(text='Выберите автобус:', chat_id=callback.from_user.id,
+                                          message_id=callback.message.id + 1, reply_markup=keyboard)
+                    break
     # elif str(callback.data)[:str(callback.data).find(' ')] == 'button_bus_add':
     #     for user in user_list:
     #         if user.attrib.get('id') == str(callback.from_user.id):
