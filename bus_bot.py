@@ -40,7 +40,7 @@ def transport_list(stop_link):
         return None
     soup = BeautifulSoup(response.text, 'html.parser')
     try:
-        print(response.text)
+        print(response.url)
         vehicles = []
         for transport in soup.find_all(class_='masstransit-vehicle-snippet-view__main-text'):
             vehicles.append(transport.text)
