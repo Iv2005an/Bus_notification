@@ -36,11 +36,11 @@ def name_stop(stop_link):
 def transport_list(stop_link):
     try:
         response = session.get(stop_link, headers=headers)
-    except Exception as e:
-        print(e)
+    except Exception:
         return None
     soup = BeautifulSoup(response.text, 'html.parser')
     try:
+        print(response.text)
         vehicles = []
         for transport in soup.find_all(class_='masstransit-vehicle-snippet-view__main-text'):
             vehicles.append(transport.text)
