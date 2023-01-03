@@ -302,6 +302,19 @@ def callback_button(callback):
                     callback.data = f'button_stop_selected {s_i}'
                     callback_button(callback)
                     break
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_selected_to_setting':
+        s_i = str(callback.data)[str(callback.data).find(" ") + 1:str(callback.data).rfind(' ')]
+        transport_name = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+        keyboard = types.InlineKeyboardMarkup(row_width=2)
+        keyboard.add(
+            types.InlineKeyboardButton(text='Интервал времени⌚️',
+                                       callback_data=f'setting_transport_time_interval {s_i} {transport_name}'),
+            types.InlineKeyboardButton(text='Время до прибытия⏲️',
+                                       callback_data=f'setting_transport_time_to_arrival {s_i} {transport_name}'),
+            types.InlineKeyboardButton(text='Назад🔙',
+                                       callback_data=f'button_transport_select {s_i}'))
+        bot.edit_message_text(text=transport_name, chat_id=callback.from_user.id, message_id=callback.message.id,
+                              reply_markup=keyboard)
 
 
 @bot.message_handler(func=lambda m: True)
