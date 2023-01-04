@@ -43,6 +43,7 @@ def transport_list(stop_link):
     soup = BeautifulSoup(response.text, 'html.parser')
     try:
         print(response.url)
+        # print(response.text)
         vehicles = []
         for transport in soup.find_all(class_='masstransit-vehicle-snippet-view__main-text'):
             vehicles.append(transport.text)
@@ -67,6 +68,7 @@ def time_to_transport(stop_link, transport_name):
 
 def long_link(response):
     print(response.url)
+    # print(response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
     body = soup.find('body')
     scripts = body.find_all(name='script', type='text/javascript')
@@ -150,6 +152,7 @@ def callback_button(callback):
             bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                   text='Выберите остановку:', reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'button_stop_selected':
+        s = str(callback.data)[str(callback.data).find(' ') + 1:]
         bot.edit_message_text(text='Пожалуйста подождите...', chat_id=callback.from_user.id,
                               message_id=callback.message.id)
         with sqlite3.connect('users.db') as database:
@@ -159,7 +162,7 @@ def callback_button(callback):
             FROM users
             WHERE user_id={callback.from_user.id}
             """).fetchall()):
-                if str(s_i) == str(callback.data)[str(callback.data).find(' ') + 1:]:
+                if str(s_i) == s:
                     schedule = str(cursor.execute(f"""
                     SELECT DISTINCT stop_name
                     FROM users
@@ -205,6 +208,7 @@ def callback_button(callback):
                         pass
                     break
     elif str(callback.data)[:str(callback.data).find(' ')] == 'button_stop_delete':
+        s = str(callback.data)[str(callback.data).find(' ') + 1:]
         with sqlite3.connect('users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
@@ -212,7 +216,7 @@ def callback_button(callback):
             FROM users
             WHERE user_id={callback.from_user.id}
             """).fetchall()):
-                if str(s_i) == str(callback.data)[str(callback.data).find(' ') + 1:]:
+                if str(s_i) == s:
                     cursor.execute(f"""
                     DELETE FROM users
                     WHERE user_id={callback.from_user.id}
@@ -223,6 +227,7 @@ def callback_button(callback):
                     callback_button(callback)
                     break
     elif str(callback.data)[:str(callback.data).find(' ')] == 'button_transport_add':
+        s = str(callback.data)[str(callback.data).find(' ') + 1:]
         bot.edit_message_text(text='Пожалуйста подождите...', chat_id=callback.from_user.id,
                               message_id=callback.message.id)
         with sqlite3.connect('users.db') as database:
@@ -232,7 +237,7 @@ def callback_button(callback):
             FROM users
             WHERE user_id={callback.from_user.id}
             """).fetchall()):
-                if str(s_i) == str(callback.data)[str(callback.data).find(' ') + 1:]:
+                if str(s_i) == s:
                     transport_from_stop = transport_list(stop[0])
                     transport_from_database = cursor.execute(f"""
                     SELECT DISTINCT transport_name
@@ -252,6 +257,7 @@ def callback_button(callback):
                                           message_id=callback.message.id, reply_markup=keyboard)
                     break
     elif str(callback.data)[:str(callback.data).find(' ')] == 'button_transport_select':
+        s = str(callback.data)[str(callback.data).find(' ') + 1:]
         with sqlite3.connect('users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
@@ -259,7 +265,7 @@ def callback_button(callback):
             FROM users
             WHERE user_id={callback.from_user.id}
             """).fetchall()):
-                if str(s_i) == str(callback.data)[str(callback.data).find(' ') + 1:]:
+                if str(s_i) == s:
                     keyboard = types.InlineKeyboardMarkup(row_width=1)
                     for transport in cursor.execute(f"""
                     SELECT DISTINCT transport_name
@@ -272,7 +278,10 @@ def callback_button(callback):
                     keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data=f'button_stop_selected {s_i}'))
                     bot.edit_message_text(text='Выберите автобус:', chat_id=callback.from_user.id,
                                           message_id=callback.message.id, reply_markup=keyboard)
+                    break
     elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_selected_to_add':
+        s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
+        t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
         with sqlite3.connect('users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
@@ -280,7 +289,7 @@ def callback_button(callback):
             FROM users
             WHERE user_id={callback.from_user.id}
             """).fetchall()):
-                if str(s_i) == str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]:
+                if str(s_i) == s:
                     if cursor.execute(f"""
                     SELECT transport_name
                     FROM users
@@ -289,34 +298,64 @@ def callback_button(callback):
                     """).fetchall()[0][0] is None:
                         cursor.execute(f"""
                         UPDATE users
-                        SET transport_name = '{str(callback.data)[str(callback.data).rfind(' ') + 1:]}'
+                        SET transport_name = '{t}'
                         WHERE user_id={callback.from_user.id}
                         AND stop_link='{stop[1]}'
                         """)
                     else:
                         cursor.execute(f"""
                         INSERT INTO users (user_id, stop_name, stop_link, transport_name)
-                        VALUES ('{callback.from_user.id}', '{stop[0]}', '{stop[1]}', '{str(callback.data)[str(callback.data).rfind(' ') + 1:]}')
+                        VALUES ('{callback.from_user.id}', '{stop[0]}', '{stop[1]}', '{t}')
                         """)
                     database.commit()
                     callback.data = f'button_stop_selected {s_i}'
                     callback_button(callback)
                     break
     elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_selected_to_setting':
-        s_i = str(callback.data)[str(callback.data).find(" ") + 1:str(callback.data).rfind(' ')]
-        transport_name = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+        s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
+        t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
         keyboard = types.InlineKeyboardMarkup(row_width=2)
         keyboard.add(
             types.InlineKeyboardButton(text='Интервал времени⌚️',
-                                       callback_data=f'setting_transport_time_interval {s_i} {transport_name}'),
+                                       callback_data=f'setting_transport_time_interval {s} {t}'),
             types.InlineKeyboardButton(text='Время до прибытия⏲️',
-                                       callback_data=f'setting_transport_time_to_arrival {s_i} {transport_name}'),
+                                       callback_data=f'setting_transport_time_to_arrival {s} {t}'),
             types.InlineKeyboardButton(text='Удалить автобус✖️',
-                                       callback_data=f'button_transport_delete {s_i} {transport_name}'),
+                                       callback_data=f'button_transport_delete {s} {t}'),
             types.InlineKeyboardButton(text='Назад🔙',
-                                       callback_data=f'button_transport_select {s_i}'))
-        bot.edit_message_text(text=transport_name, chat_id=callback.from_user.id, message_id=callback.message.id,
+                                       callback_data=f'button_transport_select {s}'))
+        bot.edit_message_text(text=t, chat_id=callback.from_user.id, message_id=callback.message.id,
                               reply_markup=keyboard)
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'button_transport_delete':
+        s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
+        t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            for s_i, stop in enumerate(cursor.execute(f"""
+            SELECT DISTINCT stop_link
+            FROM users
+            WHERE user_id={callback.from_user.id}
+            """).fetchall()):
+                if str(s_i) == s:
+                    s_l = stop[0]
+                    break
+            if len(cursor.execute(f"""
+            SELECT * FROM users
+            WHERE user_id={callback.from_user.id} AND stop_link='{s_l}'
+            """).fetchall()) == 1:
+                cursor.execute(f"""
+                UPDATE users
+                SET transport_name = NULL
+                WHERE user_id={callback.from_user.id} AND stop_link='{s_l}'
+                """)
+            else:
+                cursor.execute(f"""
+                DELETE FROM users
+                WHERE user_id={callback.from_user.id} AND stop_link='{s_l}' AND transport_name='{t}'
+                """)
+            database.commit()
+            callback.data = f'button_stop_selected {s}'
+            callback_button(callback)
 
 
 @bot.message_handler(func=lambda m: True)
