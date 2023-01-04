@@ -180,10 +180,7 @@ def callback_button(callback):
                         schedule += ':'
                         for transport in transport_from_database:
                             schedule += f'\n{transport[0]} - {time_to_transport(stop[0], transport[0])}'
-                    keyboard = types.InlineKeyboardMarkup(row_width=2)
-                    keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_stop_select'),
-                                 types.InlineKeyboardButton(text='Удалить остановку➖',
-                                                            callback_data=f'button_stop_delete {s_i}'))
+                    keyboard = types.InlineKeyboardMarkup(row_width=1)
                     if len(transport_from_database) != 0:
                         transport_at_stop = transport_list(stop[0])
                         user_stop_transport = [str(vehicle[0]) for vehicle in transport_from_database]
@@ -201,6 +198,9 @@ def callback_button(callback):
                     else:
                         keyboard.add(types.InlineKeyboardButton(text='Добавить автобус🚌➕',
                                                                 callback_data=f'button_transport_add {s_i}'))
+                    keyboard.add(types.InlineKeyboardButton(text='Удалить остановку➖',
+                                                            callback_data=f'button_stop_delete {s_i}'),
+                                 types.InlineKeyboardButton(text='Назад🔙', callback_data='button_stop_select'))
                     try:
                         bot.edit_message_text(text=schedule, chat_id=callback.from_user.id,
                                               message_id=callback.message.id, reply_markup=keyboard)
@@ -314,13 +314,13 @@ def callback_button(callback):
     elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_selected_to_setting':
         s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
         t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
-        keyboard = types.InlineKeyboardMarkup(row_width=2)
+        keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(
             types.InlineKeyboardButton(text='Интервал времени⌚️',
                                        callback_data=f'setting_transport_time_interval {s} {t}'),
             types.InlineKeyboardButton(text='Время до прибытия⏲️',
                                        callback_data=f'setting_transport_time_to_arrival {s} {t}'),
-            types.InlineKeyboardButton(text='Удалить автобус✖️',
+            types.InlineKeyboardButton(text='Удалить автобус➖️',
                                        callback_data=f'button_transport_delete {s} {t}'),
             types.InlineKeyboardButton(text='Назад🔙',
                                        callback_data=f'button_transport_select {s}'))
