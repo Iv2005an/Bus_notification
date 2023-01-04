@@ -324,7 +324,7 @@ def callback_button(callback):
                                        callback_data=f'button_transport_delete {s} {t}'),
             types.InlineKeyboardButton(text='Назад🔙',
                                        callback_data=f'button_transport_select {s}'))
-        bot.edit_message_text(text=t, chat_id=callback.from_user.id, message_id=callback.message.id,
+        bot.edit_message_text(text=f'{t}:', chat_id=callback.from_user.id, message_id=callback.message.id,
                               reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'button_transport_delete':
         s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
