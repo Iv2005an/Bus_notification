@@ -16,8 +16,8 @@ with sqlite3.connect("users.db") as database:  # создание бд
     stop_name TEXT,
     stop_link TEXT,
     transport_name TEXT,
-    transport_time_interval INTEGER,
-    transport_time_to_arrival TEXT)
+    transport_time_interval TEXT,
+    transport_time_to_arrival INTEGER)
     """)
     database.commit()
 
