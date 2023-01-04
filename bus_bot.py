@@ -311,6 +311,8 @@ def callback_button(callback):
                                        callback_data=f'setting_transport_time_interval {s_i} {transport_name}'),
             types.InlineKeyboardButton(text='Время до прибытия⏲️',
                                        callback_data=f'setting_transport_time_to_arrival {s_i} {transport_name}'),
+            types.InlineKeyboardButton(text='Удалить автобус✖️',
+                                       callback_data=f'button_transport_delete {s_i} {transport_name}'),
             types.InlineKeyboardButton(text='Назад🔙',
                                        callback_data=f'button_transport_select {s_i}'))
         bot.edit_message_text(text=transport_name, chat_id=callback.from_user.id, message_id=callback.message.id,
