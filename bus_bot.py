@@ -17,8 +17,9 @@ with sqlite3.connect("users.db") as database:  # создание бд
     stop_link TEXT,
     transport_name TEXT,
     transport_time_interval TEXT,
-    transport_time_to_arrival INTEGER)
-    """)
+    transport_time_to_arrival INTEGER,
+    transport_weekdays TEXT
+    )""")
     database.commit()
 
 
@@ -93,13 +94,13 @@ def start(message):
             for i, stop in enumerate(user_stops):
                 stops += str(stop[1]) + '\n'
             keyboard = types.InlineKeyboardMarkup(row_width=1)
-            keyboard.add(types.InlineKeyboardButton(text='Выбор остановки🚏✔️', callback_data='button_stop_select'),
-                         types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='button_stop_add'))
+            keyboard.add(types.InlineKeyboardButton(text='Выбор остановки🚏✔️', callback_data='stop_select'),
+                         types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
             bot.send_message(message.from_user.id, f'Ваши остановки:\n{stops} ', reply_markup=keyboard)
         else:
             keyboard = types.InlineKeyboardMarkup(row_width=1)
             keyboard.add(
-                types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='button_stop_add'))
+                types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
             bot.send_message(message.from_user.id, 'У вас нет отслеживаемых остановок', reply_markup=keyboard)
 
 
@@ -108,7 +109,7 @@ def callback_button(callback):
     with open('log_callback_button.log', 'a', encoding='utf-8') as file:
         file.write(str(time.strftime("%H:%M:%S", time.localtime())) + ' ' +
                    str(callback.from_user.id) + ' ' + str(callback.data) + '\n')
-    if callback.data == 'button_start':
+    if callback.data == 'start':
         with sqlite3.connect("users.db") as database:
             cursor = database.cursor()
             user_stops = cursor.execute(f"""
@@ -121,22 +122,22 @@ def callback_button(callback):
                 for i, stop in enumerate(user_stops):
                     stops += str(stop[0]) + '\n'
                 keyboard = types.InlineKeyboardMarkup(row_width=1)
-                keyboard.add(types.InlineKeyboardButton(text='Выбор остановки🚏✔️', callback_data='button_stop_select'),
-                             types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='button_stop_add'))
+                keyboard.add(types.InlineKeyboardButton(text='Выбор остановки🚏✔️', callback_data='stop_select'),
+                             types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
                 bot.edit_message_text(text=f'Ваши остановки:\n{stops}', chat_id=callback.from_user.id,
                                       message_id=callback.message.id, reply_markup=keyboard)
             else:
                 keyboard = types.InlineKeyboardMarkup(row_width=1)
                 keyboard.add(
-                    types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='button_stop_add'))
+                    types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
                 bot.edit_message_text(text='У вас нет отслеживаемых остановок', chat_id=callback.from_user.id,
                                       message_id=callback.message.id, reply_markup=keyboard)
-    elif callback.data == 'button_stop_add':
+    elif callback.data == 'stop_add':
         keyboard = types.InlineKeyboardMarkup(row_width=1)
-        keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_start'))
+        keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data='start'))
         bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                               text='Вставьте ссылку на остановку', reply_markup=keyboard)
-    elif callback.data == 'button_stop_select':
+    elif callback.data == 'stop_select':
         with sqlite3.connect("users.db") as database:
             cursor = database.cursor()
             user_stops = cursor.execute(f"""
@@ -147,11 +148,11 @@ def callback_button(callback):
             keyboard = types.InlineKeyboardMarkup(row_width=1)
             for s_i, stop in enumerate(user_stops):
                 keyboard.add((types.InlineKeyboardButton(text=stop[1],
-                                                         callback_data=f'button_stop_selected {s_i}')))
-            keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data='button_start'))
+                                                         callback_data=f'stop_selected {s_i}')))
+            keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data='start'))
             bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                   text='Выберите остановку:', reply_markup=keyboard)
-    elif str(callback.data)[:str(callback.data).find(' ')] == 'button_stop_selected':
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'stop_selected':
         s = str(callback.data)[str(callback.data).find(' ') + 1:]
         bot.edit_message_text(text='Пожалуйста подождите...', chat_id=callback.from_user.id,
                               message_id=callback.message.id)
@@ -187,27 +188,27 @@ def callback_button(callback):
                         user_stop_transport.sort()
                         if str(transport_at_stop).strip('[]') in str(user_stop_transport).strip('[]'):
                             keyboard.add(types.InlineKeyboardButton(text='Выбрать автобус🚌✔️',
-                                                                    callback_data=f'button_transport_select {s_i}'))
+                                                                    callback_data=f'transport_select {s_i}'))
                         else:
                             keyboard.add(types.InlineKeyboardButton(text='Выбрать автобус🚌✔️',
-                                                                    callback_data=f'button_transport_select {s_i}'),
+                                                                    callback_data=f'transport_select {s_i}'),
                                          types.InlineKeyboardButton(text='Добавить автобус🚌➕',
-                                                                    callback_data=f'button_transport_add {s_i}'))
+                                                                    callback_data=f'transport_add {s_i}'))
                         keyboard.add(types.InlineKeyboardButton(text='Обновить🔄️',
-                                                                callback_data=f'button_stop_selected {s_i}'))
+                                                                callback_data=f'stop_selected {s_i}'))
                     else:
                         keyboard.add(types.InlineKeyboardButton(text='Добавить автобус🚌➕',
-                                                                callback_data=f'button_transport_add {s_i}'))
+                                                                callback_data=f'transport_add {s_i}'))
                     keyboard.add(types.InlineKeyboardButton(text='Удалить остановку➖',
-                                                            callback_data=f'button_stop_delete {s_i}'),
-                                 types.InlineKeyboardButton(text='Назад🔙', callback_data='button_stop_select'))
+                                                            callback_data=f'stop_delete {s_i}'),
+                                 types.InlineKeyboardButton(text='Назад🔙', callback_data='stop_select'))
                     try:
                         bot.edit_message_text(text=schedule, chat_id=callback.from_user.id,
                                               message_id=callback.message.id, reply_markup=keyboard)
                     except telebot.apihelper.ApiTelegramException:
                         pass
                     break
-    elif str(callback.data)[:str(callback.data).find(' ')] == 'button_stop_delete':
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'stop_delete':
         s = str(callback.data)[str(callback.data).find(' ') + 1:]
         with sqlite3.connect('users.db') as database:
             cursor = database.cursor()
@@ -223,10 +224,10 @@ def callback_button(callback):
                     AND stop_link='{stop[0]}'
                     """)
                     database.commit()
-                    callback.data = 'button_start'
+                    callback.data = 'start'
                     callback_button(callback)
                     break
-    elif str(callback.data)[:str(callback.data).find(' ')] == 'button_transport_add':
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_add':
         s = str(callback.data)[str(callback.data).find(' ') + 1:]
         bot.edit_message_text(text='Пожалуйста подождите...', chat_id=callback.from_user.id,
                               message_id=callback.message.id)
@@ -252,11 +253,11 @@ def callback_button(callback):
                     for transport in transport_to_add_in_database:
                         keyboard.add(types.InlineKeyboardButton(text=transport,
                                                                 callback_data=f'transport_selected_to_add {s_i} {transport}'))
-                    keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data=f'button_stop_selected {s_i}'))
+                    keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data=f'stop_selected {s_i}'))
                     bot.edit_message_text(text='Выберите автобус:', chat_id=callback.from_user.id,
                                           message_id=callback.message.id, reply_markup=keyboard)
                     break
-    elif str(callback.data)[:str(callback.data).find(' ')] == 'button_transport_select':
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_select':
         s = str(callback.data)[str(callback.data).find(' ') + 1:]
         with sqlite3.connect('users.db') as database:
             cursor = database.cursor()
@@ -275,7 +276,7 @@ def callback_button(callback):
                     """).fetchall():
                         keyboard.add(types.InlineKeyboardButton(text=transport[0],
                                                                 callback_data=f'transport_selected_to_setting {s_i} {transport[0]}'))
-                    keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data=f'button_stop_selected {s_i}'))
+                    keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data=f'stop_selected {s_i}'))
                     bot.edit_message_text(text='Выберите автобус:', chat_id=callback.from_user.id,
                                           message_id=callback.message.id, reply_markup=keyboard)
                     break
@@ -308,7 +309,7 @@ def callback_button(callback):
                         VALUES ('{callback.from_user.id}', '{stop[0]}', '{stop[1]}', '{t}')
                         """)
                     database.commit()
-                    callback.data = f'button_stop_selected {s_i}'
+                    callback.data = f'stop_selected {s_i}'
                     callback_button(callback)
                     break
     elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_selected_to_setting':
@@ -320,13 +321,15 @@ def callback_button(callback):
                                        callback_data=f'setting_transport_time_interval {s} {t}'),
             types.InlineKeyboardButton(text='Время до прибытия⏲️',
                                        callback_data=f'setting_transport_time_to_arrival {s} {t}'),
+            types.InlineKeyboardButton(text='Дни недели🗓️',
+                                       callback_data=f'setting_transport_weekdays {s} {t}'),
             types.InlineKeyboardButton(text='Удалить автобус➖️',
-                                       callback_data=f'button_transport_delete {s} {t}'),
+                                       callback_data=f'transport_delete {s} {t}'),
             types.InlineKeyboardButton(text='Назад🔙',
-                                       callback_data=f'button_transport_select {s}'))
+                                       callback_data=f'transport_select {s}'))
         bot.edit_message_text(text=f'{t}:', chat_id=callback.from_user.id, message_id=callback.message.id,
                               reply_markup=keyboard)
-    elif str(callback.data)[:str(callback.data).find(' ')] == 'button_transport_delete':
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_delete':
         s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
         t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
         with sqlite3.connect('users.db') as database:
@@ -354,8 +357,17 @@ def callback_button(callback):
                 WHERE user_id={callback.from_user.id} AND stop_link='{s_l}' AND transport_name='{t}'
                 """)
             database.commit()
-            callback.data = f'button_stop_selected {s}'
+            callback.data = f'stop_selected {s}'
             callback_button(callback)
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_time_interval':
+        s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
+        t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_time_to_arrival':
+        s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
+        t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_weekdays':
+        s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
+        t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
 
 
 @bot.message_handler(func=lambda m: True)
