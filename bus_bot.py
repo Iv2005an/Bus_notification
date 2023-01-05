@@ -43,7 +43,7 @@ def transport_list(stop_link):
         return None
     soup = BeautifulSoup(response.text, 'html.parser')
     try:
-        print(response.url)
+        # print(response.url)
         # print(response.text)
         vehicles = []
         for transport in soup.find_all(class_='masstransit-vehicle-snippet-view__main-text'):
@@ -68,7 +68,7 @@ def time_to_transport(stop_link, transport_name):
 
 
 def long_link(response):
-    print(response.url)
+    # print(response.url)
     # print(response.text)
     soup = BeautifulSoup(response.text, 'html.parser')
     body = soup.find('body')
@@ -361,7 +361,8 @@ def callback_button(callback):
             """).fetchall()) == 1:
                 cursor.execute(f"""
                 UPDATE users
-                SET transport_name = NULL
+                SET transport_name = NULL, transport_time_interval = NULL,
+                transport_time_to_arrival = NULL, transport_weekdays = NULL
                 WHERE user_id={callback.from_user.id} AND stop_link='{s_l}'
                 """)
             else:
@@ -574,6 +575,108 @@ def callback_button(callback):
 
             bot.edit_message_text(text='Выберите дни недели:', chat_id=callback.from_user.id,
                                   message_id=callback.message.id, reply_markup=keyboard)
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'weekday':
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
+        w = data[2]
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            weekdays = str(cursor.execute(f"""
+            SELECT transport_weekdays FROM users
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+            AND transport_name='{t}'
+            """).fetchall()[0][0])
+            if weekdays.find(w) != -1:
+                weekdays = weekdays.replace(f'{w} ', '')
+            elif weekdays == 'None':
+                weekdays = f'{w} '
+            else:
+                weekdays += f'{w} '
+            weekdays = weekdays.split()
+            weekdays.sort()
+            weekdays = ' '.join(weekdays) + ' '
+            cursor.execute(f"""
+            UPDATE users
+            SET transport_weekdays = '{weekdays}'
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+            AND transport_name='{t}'
+            """)
+            database.commit()
+        callback.data = f'setting_transport_weekdays {s} {t}'
+        callback_button(callback)
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'weekdays_all_week':
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            weekdays = str(cursor.execute(f"""
+                        SELECT transport_weekdays FROM users
+                        WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+                        AND transport_name='{t}'
+                        """).fetchall()[0][0])
+            if weekdays != '0 1 2 3 4 5 6 ':
+                weekdays = "'0 1 2 3 4 5 6 '"
+            else:
+                weekdays = 'NULL'
+            cursor.execute(f"""
+                        UPDATE users
+                        SET transport_weekdays = {weekdays}
+                        WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+                        AND transport_name='{t}'
+                        """)
+            database.commit()
+        callback.data = f'setting_transport_weekdays {s} {t}'
+        callback_button(callback)
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'weekdays_workdays':
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            weekdays = str(cursor.execute(f"""
+            SELECT transport_weekdays FROM users
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+            AND transport_name='{t}'
+            """).fetchall()[0][0])
+            if weekdays != '0 1 2 3 4 ':
+                weekdays = "'0 1 2 3 4 '"
+            else:
+                weekdays = 'NULL'
+            cursor.execute(f"""
+            UPDATE users
+            SET transport_weekdays = {weekdays}
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+            AND transport_name='{t}'
+            """)
+            database.commit()
+        callback.data = f'setting_transport_weekdays {s} {t}'
+        callback_button(callback)
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'weekdays_weekends':
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            weekdays = str(cursor.execute(f"""
+            SELECT transport_weekdays FROM users
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+            AND transport_name='{t}'
+            """).fetchall()[0][0])
+            if weekdays != '5 6 ':
+                weekdays = "'5 6 '"
+            else:
+                weekdays = 'NULL'
+            cursor.execute(f"""
+            UPDATE users
+            SET transport_weekdays = {weekdays}
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+            AND transport_name='{t}'
+            """)
+            database.commit()
+        callback.data = f'setting_transport_weekdays {s} {t}'
+        callback_button(callback)
 
 
 @bot.message_handler(func=lambda m: True)
