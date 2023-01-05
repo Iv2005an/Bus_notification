@@ -165,7 +165,8 @@ def callback_button(callback):
             bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                                   text='Выберите остановку:', reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'stop_selected':
-        s = str(callback.data)[str(callback.data).find(' ') + 1:]
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
         bot.edit_message_text(text='Пожалуйста подождите...', chat_id=callback.from_user.id,
                               message_id=callback.message.id)
         with sqlite3.connect('users.db') as database:
@@ -221,7 +222,8 @@ def callback_button(callback):
                         pass
                     break
     elif str(callback.data)[:str(callback.data).find(' ')] == 'stop_delete':
-        s = str(callback.data)[str(callback.data).find(' ') + 1:]
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
         with sqlite3.connect('users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
@@ -240,7 +242,8 @@ def callback_button(callback):
                     callback_button(callback)
                     break
     elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_add':
-        s = str(callback.data)[str(callback.data).find(' ') + 1:]
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
         bot.edit_message_text(text='Пожалуйста подождите...', chat_id=callback.from_user.id,
                               message_id=callback.message.id)
         with sqlite3.connect('users.db') as database:
@@ -270,7 +273,8 @@ def callback_button(callback):
                                           message_id=callback.message.id, reply_markup=keyboard)
                     break
     elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_select':
-        s = str(callback.data)[str(callback.data).find(' ') + 1:]
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
         with sqlite3.connect('users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
@@ -293,8 +297,9 @@ def callback_button(callback):
                                           message_id=callback.message.id, reply_markup=keyboard)
                     break
     elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_selected_to_add':
-        s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
-        t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
         with sqlite3.connect('users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
@@ -326,8 +331,9 @@ def callback_button(callback):
                     callback_button(callback)
                     break
     elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_selected_to_setting':
-        s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
-        t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(
             types.InlineKeyboardButton(text='Начало отслеживания⌚️',
@@ -343,8 +349,9 @@ def callback_button(callback):
         bot.edit_message_text(text=f'{t}:', chat_id=callback.from_user.id, message_id=callback.message.id,
                               reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_delete':
-        s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
-        t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
         with sqlite3.connect('users.db') as database:
             cursor = database.cursor()
             s_l = stop_link(callback.from_user.id, s)
@@ -366,59 +373,163 @@ def callback_button(callback):
             callback.data = f'stop_selected {s}'
             callback_button(callback)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_time_interval':
-        s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
-        t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
         keyboard = types.InlineKeyboardMarkup(row_width=2)
         keyboard.add(
-            types.InlineKeyboardButton(text='-1час', callback_data=f'minus_one_minute {s} {t}'),
-            types.InlineKeyboardButton(text='+1час', callback_data=f'plus_one_minute {s} {t}'),
-            types.InlineKeyboardButton(text='-5час', callback_data=f'minus_five_minutes {s} {t}'),
-            types.InlineKeyboardButton(text='+5час', callback_data=f'plus_five_minutes {s} {t}'),
-            types.InlineKeyboardButton(text='-1мин', callback_data=f'minus_one_minute {s} {t}'),
-            types.InlineKeyboardButton(text='+1мин', callback_data=f'plus_one_minute {s} {t}'),
-            types.InlineKeyboardButton(text='-5мин', callback_data=f'minus_five_minutes {s} {t}'),
-            types.InlineKeyboardButton(text='+5мин', callback_data=f'plus_five_minutes {s} {t}'),
-            types.InlineKeyboardButton(text='Никогда', callback_data=f'never {s} {t}'),
-            types.InlineKeyboardButton(text='Сейчас', callback_data=f'now {s} {t}'),
+            types.InlineKeyboardButton(text='-1час', callback_data=f'interval_hours {s} {t} -1'),
+            types.InlineKeyboardButton(text='+1час', callback_data=f'interval_hours {s} {t} 1'),
+            types.InlineKeyboardButton(text='-4час', callback_data=f'interval_hours {s} {t} -4'),
+            types.InlineKeyboardButton(text='+4час', callback_data=f'interval_hours {s} {t} 4'),
+            types.InlineKeyboardButton(text='-1мин', callback_data=f'interval_minutes {s} {t} -1'),
+            types.InlineKeyboardButton(text='+1мин', callback_data=f'interval_minutes {s} {t} 1'),
+            types.InlineKeyboardButton(text='-5мин', callback_data=f'interval_minutes {s} {t} -5'),
+            types.InlineKeyboardButton(text='+5мин', callback_data=f'interval_minutes {s} {t} 5'),
+            types.InlineKeyboardButton(text='Никогда', callback_data=f'interval_never {s} {t}'),
+            types.InlineKeyboardButton(text='Сейчас', callback_data=f'interval_now {s} {t}'),
             types.InlineKeyboardButton(text='Назад🔙', callback_data=f'transport_selected_to_setting {s} {t}'))
         with sqlite3.connect('users.db') as database:
             cursor = database.cursor()
-            s_l = stop_link(callback.from_user.id, s)
             time_interval = cursor.execute(f"""
             SELECT transport_time_interval FROM users
-            WHERE user_id={callback.from_user.id} AND stop_link='{s_l}' AND transport_name='{t}'
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}' AND transport_name='{t}'
             """).fetchall()[0][0]
         bot.edit_message_text(text=f'Настройте начало отслеживания:\n{time_interval}', chat_id=callback.from_user.id,
                               message_id=callback.message.id, reply_markup=keyboard)
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'interval_hours':
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
+        h = data[2]
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            interval = cursor.execute(f"""
+            SELECT transport_time_interval FROM users
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+            AND transport_name='{t}'
+            """).fetchall()[0][0]
+            if interval in ['Никогда', 'Сейчас']:
+                hours = int(h)
+                minutes = 0
+            else:
+                interval = str(interval).split(':')
+                hours = int(interval[0]) + int(h)
+                minutes = int(interval[1])
+            if hours <= -1:
+                hours = 24 - abs(hours)
+            elif hours >= 24:
+                hours = hours % 24
+            cursor.execute(f"""
+            UPDATE users
+            SET transport_time_interval = '{hours}:{minutes}'
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+            AND transport_name='{t}'
+            """)
+            database.commit()
+            callback.data = f'setting_transport_time_interval {s} {t}'
+            callback_button(callback)
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'interval_minutes':
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
+        m = data[2]
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            interval = cursor.execute(f"""
+                    SELECT transport_time_interval FROM users
+                    WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+                    AND transport_name='{t}'
+                    """).fetchall()[0][0]
+            if interval in ['Никогда', 'Сейчас']:
+                hours = 0
+                minutes = int(m)
+            else:
+                interval = str(interval).split(':')
+                hours = int(interval[0])
+                minutes = int(interval[1]) + int(m)
+            if minutes <= -1:
+                minutes = 60 - abs(minutes)
+            elif minutes >= 60:
+                minutes = minutes % 60
+            cursor.execute(f"""
+                    UPDATE users
+                    SET transport_time_interval = '{hours}:{minutes}'
+                    WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+                    AND transport_name='{t}'
+                    """)
+            database.commit()
+            callback.data = f'setting_transport_time_interval {s} {t}'
+            callback_button(callback)
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'interval_never':
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            if cursor.execute(f"""
+            SELECT transport_time_interval FROM users
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+            AND transport_name='{t}'
+            """).fetchall()[0][0] != 'Никогда':
+                cursor.execute(f"""
+                UPDATE users
+                SET transport_time_interval = 'Никогда'
+                WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+                AND transport_name='{t}'
+                """)
+                database.commit()
+                callback.data = f'setting_transport_time_interval {s} {t}'
+                callback_button(callback)
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'interval_now':
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            if cursor.execute(f"""
+                    SELECT transport_time_interval FROM users
+                    WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+                    AND transport_name='{t}'
+                    """).fetchall()[0][0] != 'Сейчас':
+                cursor.execute(f"""
+                        UPDATE users
+                        SET transport_time_interval = 'Сейчас'
+                        WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+                        AND transport_name='{t}'
+                        """)
+                database.commit()
+                callback.data = f'setting_transport_time_interval {s} {t}'
+                callback_button(callback)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_time_to_arrival':
-        s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
-        t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
         keyboard = types.InlineKeyboardMarkup(row_width=2)
         keyboard.add(
-            types.InlineKeyboardButton(text='-1мин', callback_data=f'minus_one_minute {s} {t}'),
-            types.InlineKeyboardButton(text='+1мин', callback_data=f'plus_one_minute {s} {t}'),
-            types.InlineKeyboardButton(text='-5мин', callback_data=f'minus_five_minutes {s} {t}'),
-            types.InlineKeyboardButton(text='+5мин', callback_data=f'plus_five_minutes {s} {t}'),
+            types.InlineKeyboardButton(text='-1мин', callback_data=f'arrival_minutes {s} {t} -1'),
+            types.InlineKeyboardButton(text='+1мин', callback_data=f'arrival_minutes {s} {t} 1'),
+            types.InlineKeyboardButton(text='-5мин', callback_data=f'arrival_minutes {s} {t} -5'),
+            types.InlineKeyboardButton(text='+5мин', callback_data=f'arrival_minutes {s} {t} 5'),
             types.InlineKeyboardButton(text='Назад🔙', callback_data=f'transport_selected_to_setting {s} {t}'))
         with sqlite3.connect('users.db') as database:
             cursor = database.cursor()
-            s_l = stop_link(callback.from_user.id, s)
             time_to_arrival = cursor.execute(f"""
             SELECT transport_time_to_arrival FROM users
-            WHERE user_id={callback.from_user.id} AND stop_link='{s_l}' AND transport_name='{t}'
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}' AND transport_name='{t}'
             """).fetchall()[0][0]
         bot.edit_message_text(text=f'Настройте время до прибытия:\n{time_to_arrival} мин',
                               chat_id=callback.from_user.id,
                               message_id=callback.message.id, reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_weekdays':
-        s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
-        t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
         with sqlite3.connect('users.db') as database:
             cursor = database.cursor()
-            s_l = stop_link(callback.from_user.id, s)
             weekdays = str(cursor.execute(f"""
             SELECT transport_weekdays FROM users
-            WHERE user_id={callback.from_user.id} AND stop_link='{s_l}' AND transport_name='{t}'
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}' AND transport_name='{t}'
             """).fetchall()[0][0])
             names_weekdays = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
             keyboard = types.InlineKeyboardMarkup(row_width=1)
@@ -429,14 +540,11 @@ def callback_button(callback):
                 else:
                     keyboard.add(
                         types.InlineKeyboardButton(text=f'{name_weekday}✖️', callback_data=f'weekday {s} {t} {w_i}'))
-            keyboard.add(types.InlineKeyboardButton(text='Вся неделя',
-                                                    callback_data=f'all_week {s} {t}'),
-                         types.InlineKeyboardButton(text='Будни',
-                                                    callback_data=f'workdays {s} {t}'),
-                         types.InlineKeyboardButton(text='Выходные',
-                                                    callback_data=f'weekends {s} {t}'),
-                         types.InlineKeyboardButton(text='Назад🔙',
-                                                    callback_data=f'transport_selected_to_setting {s} {t}'))
+            keyboard.add(
+                types.InlineKeyboardButton(text='Вся неделя', callback_data=f'weekdays_all_week {s} {t}'),
+                types.InlineKeyboardButton(text='Будни', callback_data=f'weekdays_workdays {s} {t}'),
+                types.InlineKeyboardButton(text='Выходные', callback_data=f'weekdays_weekends {s} {t}'),
+                types.InlineKeyboardButton(text='Назад🔙', callback_data=f'transport_selected_to_setting {s} {t}'))
 
             bot.edit_message_text(text='Выберите дни недели:', chat_id=callback.from_user.id,
                                   message_id=callback.message.id, reply_markup=keyboard)
