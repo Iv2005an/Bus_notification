@@ -80,6 +80,18 @@ def long_link(response):
             return link
 
 
+def stop_link(user_id, s):
+    with sqlite3.connect('users.db') as database:
+        cursor = database.cursor()
+        for s_i, stop in enumerate(cursor.execute(f"""
+        SELECT DISTINCT stop_link
+        FROM users
+        WHERE user_id={user_id}
+        """).fetchall()):
+            if str(s_i) == s:
+                return stop[0]
+
+
 @bot.message_handler(commands=['start'])
 def start(message):
     with sqlite3.connect("users.db") as database:
@@ -334,14 +346,7 @@ def callback_button(callback):
         t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
         with sqlite3.connect('users.db') as database:
             cursor = database.cursor()
-            for s_i, stop in enumerate(cursor.execute(f"""
-            SELECT DISTINCT stop_link
-            FROM users
-            WHERE user_id={callback.from_user.id}
-            """).fetchall()):
-                if str(s_i) == s:
-                    s_l = stop[0]
-                    break
+            s_l = stop_link(callback.from_user.id, s)
             if len(cursor.execute(f"""
             SELECT * FROM users
             WHERE user_id={callback.from_user.id} AND stop_link='{s_l}'
@@ -365,9 +370,45 @@ def callback_button(callback):
     elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_time_to_arrival':
         s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
         t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+        keyboard = types.InlineKeyboardMarkup(row_width=1)
+        keyboard.add(types.InlineKeyboardButton(text='+1мин', callback_data=f'plus_one_minute {s} {t}'),
+                     types.InlineKeyboardButton(text='-1мин', callback_data=f'minus_one_minute {s} {t}'),
+                     types.InlineKeyboardButton(text='+5мин', callback_data=f'plus_five_minutes {s} {t}'),
+                     types.InlineKeyboardButton(text='-5мин', callback_data=f'minus_five_minutes {s} {t}'),
+                     types.InlineKeyboardButton(text='Назад🔙',
+                                                callback_data=f'transport_selected_to_setting {s} {t}'))
+        bot.edit_message_text(text=f'Настройте время до прибытия:\n{time_to_arrival}', chat_id=callback.from_user.id,
+                              message_id=callback.message.id, reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_weekdays':
         s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
         t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            s_l = stop_link(callback.from_user.id, s)
+            weekdays = str(cursor.execute(f"""
+            SELECT transport_weekdays FROM users
+            WHERE user_id={callback.from_user.id} AND stop_link='{s_l}' AND transport_name='{t}'
+            """).fetchall()[0][0])
+            names_weekdays = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
+            keyboard = types.InlineKeyboardMarkup(row_width=1)
+            for w_i, name_weekday in enumerate(names_weekdays):
+                if weekdays.find(str(w_i)) != -1:
+                    keyboard.add(
+                        types.InlineKeyboardButton(text=f'{name_weekday}✔️', callback_data=f'weekday {s} {t} {w_i}'))
+                else:
+                    keyboard.add(
+                        types.InlineKeyboardButton(text=f'{name_weekday}✖️', callback_data=f'weekday {s} {t} {w_i}'))
+            keyboard.add(types.InlineKeyboardButton(text='Вся неделя',
+                                                    callback_data=f'all_week {s} {t}'),
+                         types.InlineKeyboardButton(text='Будни',
+                                                    callback_data=f'workdays {s} {t}'),
+                         types.InlineKeyboardButton(text='Выходные',
+                                                    callback_data=f'weekends {s} {t}'),
+                         types.InlineKeyboardButton(text='Назад🔙',
+                                                    callback_data=f'transport_selected_to_setting {s} {t}'))
+
+            bot.edit_message_text(text='Выберите дни недели:', chat_id=callback.from_user.id,
+                                  message_id=callback.message.id, reply_markup=keyboard)
 
 
 @bot.message_handler(func=lambda m: True)
