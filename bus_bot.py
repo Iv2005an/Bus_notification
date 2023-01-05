@@ -521,6 +521,31 @@ def callback_button(callback):
         bot.edit_message_text(text=f'Настройте время до прибытия:\n{time_to_arrival} мин',
                               chat_id=callback.from_user.id,
                               message_id=callback.message.id, reply_markup=keyboard)
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'arrival_minutes':
+        data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
+        s = data[0]
+        t = data[1]
+        m = data[2]
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            interval = cursor.execute(f"""
+            SELECT transport_time_to_arrival FROM users
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+            AND transport_name='{t}'
+            """).fetchall()[0][0]
+            if not (interval == 0 and int(m) < 0):
+                minutes = interval + int(m)
+                if minutes < 0:
+                    minutes = 0
+                cursor.execute(f"""
+                UPDATE users
+                SET transport_time_to_arrival = {minutes}
+                WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+                AND transport_name='{t}'
+                """)
+                database.commit()
+                callback.data = f'setting_transport_time_to_arrival {s} {t}'
+                callback_button(callback)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_weekdays':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
@@ -529,7 +554,8 @@ def callback_button(callback):
             cursor = database.cursor()
             weekdays = str(cursor.execute(f"""
             SELECT transport_weekdays FROM users
-            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}' AND transport_name='{t}'
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+            AND transport_name='{t}'
             """).fetchall()[0][0])
             names_weekdays = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
             keyboard = types.InlineKeyboardMarkup(row_width=1)
