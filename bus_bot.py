@@ -317,8 +317,9 @@ def callback_button(callback):
                         """)
                     else:
                         cursor.execute(f"""
-                        INSERT INTO users (user_id, stop_name, stop_link, transport_name)
-                        VALUES ('{callback.from_user.id}', '{stop[0]}', '{stop[1]}', '{t}')
+                        INSERT INTO users (
+                        user_id, stop_name, stop_link, transport_name, transport_time_interval, transport_time_to_arrival)
+                        VALUES ('{callback.from_user.id}', '{stop[0]}', '{stop[1]}', '{t}', 'Никогда', 0)
                         """)
                     database.commit()
                     callback.data = f'stop_selected {s_i}'
@@ -329,7 +330,7 @@ def callback_button(callback):
         t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(
-            types.InlineKeyboardButton(text='Интервал времени⌚️',
+            types.InlineKeyboardButton(text='Начало отслеживания⌚️',
                                        callback_data=f'setting_transport_time_interval {s} {t}'),
             types.InlineKeyboardButton(text='Время до прибытия⏲️',
                                        callback_data=f'setting_transport_time_to_arrival {s} {t}'),
@@ -367,17 +368,47 @@ def callback_button(callback):
     elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_time_interval':
         s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
         t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
+        keyboard = types.InlineKeyboardMarkup(row_width=2)
+        keyboard.add(
+            types.InlineKeyboardButton(text='-1час', callback_data=f'minus_one_minute {s} {t}'),
+            types.InlineKeyboardButton(text='+1час', callback_data=f'plus_one_minute {s} {t}'),
+            types.InlineKeyboardButton(text='-5час', callback_data=f'minus_five_minutes {s} {t}'),
+            types.InlineKeyboardButton(text='+5час', callback_data=f'plus_five_minutes {s} {t}'),
+            types.InlineKeyboardButton(text='-1мин', callback_data=f'minus_one_minute {s} {t}'),
+            types.InlineKeyboardButton(text='+1мин', callback_data=f'plus_one_minute {s} {t}'),
+            types.InlineKeyboardButton(text='-5мин', callback_data=f'minus_five_minutes {s} {t}'),
+            types.InlineKeyboardButton(text='+5мин', callback_data=f'plus_five_minutes {s} {t}'),
+            types.InlineKeyboardButton(text='Никогда', callback_data=f'never {s} {t}'),
+            types.InlineKeyboardButton(text='Сейчас', callback_data=f'now {s} {t}'),
+            types.InlineKeyboardButton(text='Назад🔙', callback_data=f'transport_selected_to_setting {s} {t}'))
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            s_l = stop_link(callback.from_user.id, s)
+            time_interval = cursor.execute(f"""
+            SELECT transport_time_interval FROM users
+            WHERE user_id={callback.from_user.id} AND stop_link='{s_l}' AND transport_name='{t}'
+            """).fetchall()[0][0]
+        bot.edit_message_text(text=f'Настройте начало отслеживания:\n{time_interval}', chat_id=callback.from_user.id,
+                              message_id=callback.message.id, reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_time_to_arrival':
         s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
         t = str(callback.data)[str(callback.data).rfind(' ') + 1:]
-        keyboard = types.InlineKeyboardMarkup(row_width=1)
-        keyboard.add(types.InlineKeyboardButton(text='+1мин', callback_data=f'plus_one_minute {s} {t}'),
-                     types.InlineKeyboardButton(text='-1мин', callback_data=f'minus_one_minute {s} {t}'),
-                     types.InlineKeyboardButton(text='+5мин', callback_data=f'plus_five_minutes {s} {t}'),
-                     types.InlineKeyboardButton(text='-5мин', callback_data=f'minus_five_minutes {s} {t}'),
-                     types.InlineKeyboardButton(text='Назад🔙',
-                                                callback_data=f'transport_selected_to_setting {s} {t}'))
-        bot.edit_message_text(text=f'Настройте время до прибытия:\n{time_to_arrival}', chat_id=callback.from_user.id,
+        keyboard = types.InlineKeyboardMarkup(row_width=2)
+        keyboard.add(
+            types.InlineKeyboardButton(text='-1мин', callback_data=f'minus_one_minute {s} {t}'),
+            types.InlineKeyboardButton(text='+1мин', callback_data=f'plus_one_minute {s} {t}'),
+            types.InlineKeyboardButton(text='-5мин', callback_data=f'minus_five_minutes {s} {t}'),
+            types.InlineKeyboardButton(text='+5мин', callback_data=f'plus_five_minutes {s} {t}'),
+            types.InlineKeyboardButton(text='Назад🔙', callback_data=f'transport_selected_to_setting {s} {t}'))
+        with sqlite3.connect('users.db') as database:
+            cursor = database.cursor()
+            s_l = stop_link(callback.from_user.id, s)
+            time_to_arrival = cursor.execute(f"""
+            SELECT transport_time_to_arrival FROM users
+            WHERE user_id={callback.from_user.id} AND stop_link='{s_l}' AND transport_name='{t}'
+            """).fetchall()[0][0]
+        bot.edit_message_text(text=f'Настройте время до прибытия:\n{time_to_arrival} мин',
+                              chat_id=callback.from_user.id,
                               message_id=callback.message.id, reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_weekdays':
         s = str(callback.data)[str(callback.data).find(' ') + 1:str(callback.data).rfind(' ')]
@@ -434,8 +465,9 @@ def text_handler(message):
                     FROM users
                     WHERE user_id='{message.from_user.id}'
                     AND stop_link='{link}'""").fetchall()) == 0:
-                        cursor.execute(f"""INSERT INTO users (user_id, stop_name, stop_link)
-                        VALUES ('{message.from_user.id}', '{name_stop(link)}', '{link}')""")
+                        cursor.execute(f"""INSERT INTO users (
+                        user_id, stop_name, stop_link, transport_time_interval, transport_time_to_arrival)
+                        VALUES ('{message.from_user.id}', '{name_stop(link)}', '{link}', 'Никогда', 0)""")
                         bot.edit_message_text(text='Остановка успешно добавлена', chat_id=message.from_user.id,
                                               message_id=message.id + 1)
                     else:
