@@ -528,7 +528,7 @@ def callback_button(callback):
             SELECT transport_time_to_arrival FROM users
             WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}' AND transport_name='{t}'
             """).fetchall()[0][0]
-        bot.edit_message_text(text=f'Настройте время до прибытия:\n{time_to_arrival} мин',
+        bot.edit_message_text(text=f'Настройте время до прибытия(+/- 1мин):\n{time_to_arrival} мин',
                               chat_id=callback.from_user.id,
                               message_id=callback.message.id, reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'arrival_minutes':
