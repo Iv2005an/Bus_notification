@@ -4,8 +4,16 @@ from config import token
 import sqlite3
 from bs4 import BeautifulSoup
 import datetime
-from session import session, headers
 from threading import Thread
+from selenium import webdriver
+from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.firefox.options import Options
+
+options = Options()
+options.headless = True
+GeckoDriverManager(path="drivers").install()
+driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
 
 bot = telebot.TeleBot(token)
 
@@ -27,10 +35,10 @@ with sqlite3.connect("users.db") as database:  # создание бд
 
 def name_stop(stop_link):
     try:
-        response = session.get(stop_link, headers=headers)
+        driver.get(stop_link)
     except Exception:
         return None
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
     try:
         n_stop = soup.find('h1', class_='card-title-view__title').text
     except AttributeError:
@@ -40,13 +48,13 @@ def name_stop(stop_link):
 
 def transport_list(stop_link):
     try:
-        response = session.get(stop_link, headers=headers)
+        driver.get(stop_link)
     except Exception:
         return None
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
     try:
-        print(response.url)
-        # print(response.text)
+        print(driver.current_url)
+        # print(driver.page_source)
         vehicles = []
         for transport in soup.find_all(class_='masstransit-vehicle-snippet-view__main-text'):
             vehicles.append(transport.text)
@@ -57,8 +65,8 @@ def transport_list(stop_link):
 
 
 def time_to_transport(stop_link, transport_name):
-    response = session.get(stop_link, headers=headers)
-    soup = BeautifulSoup(response.text, 'html.parser')
+    driver.get(stop_link)
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
     vehicles = soup.find_all(class_='masstransit-vehicle-snippet-view__main-text')
     for transport in vehicles:
         if transport.text == transport_name:
@@ -70,10 +78,10 @@ def time_to_transport(stop_link, transport_name):
 
 
 def long_link(stop_link):
-    response = session.get(stop_link, headers=headers)
-    print(response.url)
-    # print(response.text)
-    soup = BeautifulSoup(response.text, 'html.parser')
+    driver.get(stop_link)
+    print(driver.current_url)
+    # print(driver.page_source)
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
     body = soup.find('body')
     scripts = body.find_all(name='script', type='text/javascript')
     for s, script in enumerate(scripts):

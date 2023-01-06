@@ -20,25 +20,13 @@ class TlsAdapter(HTTPAdapter):
 
 headers = {
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-    'accept-encoding': 'gzip, deflate, br',
     'accept-language': 'ru,en;q=0.9',
     'cache-control': 'max-age=0',
     'cookie': 'maps_los=0; yandexuid=9891028751672861936; is_gdpr=0; is_gdpr_b=CJaLGxD+ngE=; i=BvTbBeP7FNr68YjQWsdI1sEfITv4h00L1dSpLmGYvGkDGADT0ryYT8pedO54SM7uh2s3/mZTenS8Pvo3GY0LdN3k30w=; yuidss=9891028751672861936; ymex=1988221937.yrts.1672861937; gdpr=0; _ym_uid=16728619371040387954; _ym_d=1672861938; _ym_isad=2; _yasc=zeI15jD4bl577sz+8/Mrx1PiN6TwC0514CBkg4syOm3o4JAuorEgP3kIlqFCbg==',
-    'device-memory': '8',
-    'downlink': '10',
-    'dpr': '2',
-    'ect': '4g',
-    'rtt': '50',
-    'sec-ch-ua': '"Chromium";v="106", "Yandex";v="22", "Not;A=Brand";v="99"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"macOS"',
     'sec-fetch-dest': 'document',
     'sec-fetch-mode': 'navigate',
     'sec-fetch-site': 'same-origin',
-    'sec-fetch-user': '?1',
-    'upgrade-insecure-requests': '1',
     'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 YaBrowser/22.11.3.823 Yowser/2.5 Safari/537.36',
-    'viewport-width': '1470'
 }
 session = requests.session()
 adapter = TlsAdapter(ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
