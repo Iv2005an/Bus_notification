@@ -773,11 +773,11 @@ def notification():
                         bot.send_message(chat_id=vehicle[0],
                                          text=f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival}')
                         cursor.execute(f"""
-                                        UPDATE users
-                                        SET tracked=0
-                                        WHERE user_id={vehicle[0]} AND stop_link='{vehicle[2]}'
-                                        AND transport_name='{vehicle[3]}'
-                                        """)
+                        UPDATE users
+                        SET tracked=0
+                        WHERE user_id={vehicle[0]} AND stop_link='{vehicle[2]}'
+                        AND transport_name='{vehicle[3]}'
+                        """)
             flag_notification = False
         elif int(datetime.now().strftime('%S')) != 0:
             flag_notification = True
