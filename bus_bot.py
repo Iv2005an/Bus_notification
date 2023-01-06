@@ -3,8 +3,9 @@ from telebot import types
 from config import token
 import sqlite3
 from bs4 import BeautifulSoup
-import time
+from datetime import datetime
 from session import session, headers
+from threading import Thread
 
 bot = telebot.TeleBot(token)
 
@@ -18,7 +19,8 @@ with sqlite3.connect("users.db") as database:  # создание бд
     transport_name TEXT,
     transport_time_interval TEXT,
     transport_time_to_arrival INTEGER,
-    transport_weekdays TEXT
+    transport_weekdays TEXT,
+    tracked INTEGER
     )""")
     database.commit()
 
@@ -119,8 +121,7 @@ def start(message):
 @bot.callback_query_handler(func=lambda func: True)
 def callback_button(callback):
     with open('log_callback_button.log', 'a', encoding='utf-8') as file:
-        file.write(str(time.strftime("%H:%M:%S", time.localtime())) + ' ' +
-                   str(callback.from_user.id) + ' ' + str(callback.data) + '\n')
+        file.write(str(datetime.now()) + ' ' + str(callback.from_user.id) + ' ' + str(callback.data) + '\n')
     if callback.data == 'start':
         with sqlite3.connect("users.db") as database:
             cursor = database.cursor()
@@ -421,6 +422,10 @@ def callback_button(callback):
                 hours = 24 - abs(hours)
             elif hours >= 24:
                 hours = hours % 24
+            if hours < 10:
+                hours = '0' + str(hours)
+            if minutes < 10:
+                minutes = '0' + str(minutes)
             cursor.execute(f"""
             UPDATE users
             SET transport_time_interval = '{hours}:{minutes}'
@@ -453,6 +458,10 @@ def callback_button(callback):
                 minutes = 60 - abs(minutes)
             elif minutes >= 60:
                 minutes = minutes % 60
+            if minutes < 10:
+                minutes = '0' + str(minutes)
+            if hours < 10:
+                hours = '0' + str(hours)
             cursor.execute(f"""
                     UPDATE users
                     SET transport_time_interval = '{hours}:{minutes}'
@@ -715,6 +724,65 @@ def text_handler(message):
             bot.edit_message_text(text='Ошибка, ссылка не ведёт на остановку, попробуйте снова',
                                   chat_id=message.from_user.id, message_id=message.id + 1)
             start(message)
+    else:
+        bot.send_message(chat_id=message.from_user.id, text='Ошибка, попробуйте снова')
+        start(message)
 
 
-bot.infinity_polling()
+flag_check_time_interval = True
+
+
+def check_time_interval():
+    global flag_check_time_interval
+    while True:
+        if int(datetime.now().strftime('%S')) == 0 and flag_check_time_interval:
+            with sqlite3.connect('users.db') as database:
+                cursor = database.cursor()
+                cursor.execute(f"""
+            UPDATE users
+            SET tracked = 1
+            WHERE transport_time_interval='{datetime.now().strftime('%H')}:{int(datetime.now().strftime('%M')) - 1}'
+            AND transport_weekdays LIKE '%{int(datetime.now().strftime('%u')) - 1}%'
+            """)
+            flag_check_time_interval = False
+        elif int(datetime.now().strftime('%S')) != 0:
+            flag_check_time_interval = True
+
+
+flag_notification = True
+
+
+def notification():
+    global flag_notification
+    while True:
+        if int(datetime.now().strftime('%S')) == 0 and flag_notification:
+            with sqlite3.connect('users.db') as database:
+                cursor = database.cursor()
+                tracked_vehicles = cursor.execute(f"""
+                SELECT user_id, stop_name, stop_link, transport_name, transport_time_to_arrival FROM users
+                WHERE tracked=1
+                """).fetchall()
+                for vehicle in tracked_vehicles:
+                    time_arrival = str(time_to_transport(vehicle[2], vehicle[3]))
+                    try:
+                        time_arrival = int(time_arrival[:-4])
+                    except ValueError:
+                        continue
+                    print(vehicle[3], time_arrival)
+                    if time_arrival == vehicle[4]:
+                        bot.send_message(chat_id=vehicle[0],
+                                         text=f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival}')
+                        cursor.execute(f"""
+                                        UPDATE users
+                                        SET tracked=0
+                                        WHERE user_id={vehicle[0]} AND stop_link='{vehicle[2]}'
+                                        AND transport_name='{vehicle[3]}'
+                                        """)
+            flag_notification = False
+        elif int(datetime.now().strftime('%S')) != 0:
+            flag_notification = True
+
+
+Thread(target=bot.infinity_polling).start()
+Thread(target=check_time_interval).start()
+Thread(target=notification).start()
