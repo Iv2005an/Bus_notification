@@ -769,7 +769,7 @@ def notification():
                     except ValueError:
                         continue
                     print(vehicle[3], time_arrival)
-                    if time_arrival == vehicle[4]:
+                    if time_arrival == vehicle[4] - 1 or time_arrival == vehicle[4] or time_arrival == vehicle[4] + 1:
                         bot.send_message(chat_id=vehicle[0],
                                          text=f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival}')
                         cursor.execute(f"""
