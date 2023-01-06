@@ -770,9 +770,9 @@ def notification():
                     except ValueError:
                         continue
                     print(vehicle[3], time_arrival)
-                    if time_arrival == vehicle[4] - 1 or time_arrival == vehicle[4] or time_arrival == vehicle[4] + 1:
+                    if time_arrival == vehicle[4] - 1 or time_arrival == vehicle[4]:
                         bot.send_message(chat_id=vehicle[0],
-                                         text=f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival}')
+                                         text=f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival} мин')
                         cursor.execute(f"""
                         UPDATE users
                         SET tracked=0
