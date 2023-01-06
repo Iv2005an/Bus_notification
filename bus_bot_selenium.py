@@ -6,14 +6,11 @@ from bs4 import BeautifulSoup
 import datetime
 from threading import Thread
 from selenium import webdriver
-from webdriver_manager.firefox import GeckoDriverManager
-from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.firefox.options import Options
 
 options = Options()
 options.headless = True
-GeckoDriverManager(path="drivers").install()
-driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
+driver = webdriver.Firefox(options=options)
 
 bot = telebot.TeleBot(token)
 
@@ -773,6 +770,8 @@ def notification():
                 """).fetchall()
                 for vehicle in tracked_vehicles:
                     time_arrival = str(time_to_transport(vehicle[2], vehicle[3]))
+                    if time_arrival.find(':') != -1:
+                        continue
                     try:
                         time_arrival = int(time_arrival[:-4])
                     except ValueError:
