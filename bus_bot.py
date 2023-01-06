@@ -3,7 +3,7 @@ from telebot import types
 from config import token
 import sqlite3
 from bs4 import BeautifulSoup
-from datetime import datetime
+import datetime
 from session import session, headers
 from threading import Thread
 
@@ -121,7 +121,7 @@ def start(message):
 @bot.callback_query_handler(func=lambda func: True)
 def callback_button(callback):
     with open('log_callback_button.log', 'a', encoding='utf-8') as file:
-        file.write(str(datetime.now()) + ' ' + str(callback.from_user.id) + ' ' + str(callback.data) + '\n')
+        file.write(str(datetime.datetime.now()) + ' ' + str(callback.from_user.id) + ' ' + str(callback.data) + '\n')
     if callback.data == 'start':
         with sqlite3.connect("users.db") as database:
             cursor = database.cursor()
@@ -501,10 +501,10 @@ def callback_button(callback):
                     SELECT transport_time_interval FROM users
                     WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
                     AND transport_name='{t}'
-                    """).fetchall()[0][0] != 'Сейчас':
+                    """).fetchall()[0][0] != str(datetime.datetime.now().strftime("%H:%M")):
                 cursor.execute(f"""
                         UPDATE users
-                        SET transport_time_interval = 'Сейчас'
+                        SET transport_time_interval = '{datetime.datetime.now().strftime("%H:%M")}'
                         WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
                         AND transport_name='{t}'
                         """)
@@ -735,17 +735,18 @@ flag_check_time_interval = True
 def check_time_interval():
     global flag_check_time_interval
     while True:
-        if int(datetime.now().strftime('%S')) == 0 and flag_check_time_interval:
+        time = datetime.datetime.now() - datetime.timedelta(minutes=1)
+        if int(datetime.datetime.now().strftime('%S')) == 0 and flag_check_time_interval:
             with sqlite3.connect('users.db') as database:
                 cursor = database.cursor()
                 cursor.execute(f"""
-            UPDATE users
-            SET tracked = 1
-            WHERE transport_time_interval='{datetime.now().strftime('%H')}:{int(datetime.now().strftime('%M')) - 1}'
-            AND transport_weekdays LIKE '%{int(datetime.now().strftime('%u')) - 1}%'
-            """)
+                UPDATE users
+                SET tracked = 1
+                WHERE transport_time_interval='{time.strftime('%H:%M')}'
+                AND transport_weekdays LIKE '%{int(datetime.datetime.now().strftime('%u')) - 1}%'
+                """)
             flag_check_time_interval = False
-        elif int(datetime.now().strftime('%S')) != 0:
+        elif int(datetime.datetime.now().strftime('%S')) != 0:
             flag_check_time_interval = True
 
 
@@ -755,7 +756,7 @@ flag_notification = True
 def notification():
     global flag_notification
     while True:
-        if int(datetime.now().strftime('%S')) == 0 and flag_notification:
+        if int(datetime.datetime.now().strftime('%S')) == 0 and flag_notification:
             with sqlite3.connect('users.db') as database:
                 cursor = database.cursor()
                 tracked_vehicles = cursor.execute(f"""
@@ -779,7 +780,7 @@ def notification():
                         AND transport_name='{vehicle[3]}'
                         """)
             flag_notification = False
-        elif int(datetime.now().strftime('%S')) != 0:
+        elif int(datetime.datetime.now().strftime('%S')) != 0:
             flag_notification = True
 
 
