@@ -749,7 +749,7 @@ def check_time_interval():
                 """)
                 database.commit()
             flag_check_time_interval = False
-        elif int(datetime.datetime.now().strftime('%S')) != 0:
+        elif int(datetime.datetime.now().strftime('%S')) != 0 or int(datetime.datetime.now().strftime('%S')) != 30:
             flag_check_time_interval = True
 
 
@@ -774,7 +774,7 @@ def notification():
                     except ValueError:
                         continue
                     print(vehicle[3], time_arrival)
-                    if time_arrival == vehicle[4] - 1 or time_arrival == vehicle[4]:
+                    if time_arrival == vehicle[4]:
                         bot.send_message(chat_id=vehicle[0],
                                          text=f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival} мин на остановку {vehicle[1]}')
                         user_stops = cursor.execute(f"""
@@ -805,7 +805,7 @@ def notification():
                         """)
                         database.commit()
             flag_notification = False
-        elif int(datetime.datetime.now().strftime('%S')) != 0:
+        elif int(datetime.datetime.now().strftime('%S')) != 0 or int(datetime.datetime.now().strftime('%S')) != 30:
             flag_notification = True
 
 
