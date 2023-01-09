@@ -529,7 +529,7 @@ def callback_button(callback):
             SELECT transport_time_to_arrival FROM users
             WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}' AND transport_name='{t}'
             """).fetchall()[0][0]
-        bot.edit_message_text(text=f'Настройте время до прибытия(+/- 1мин):\n{time_to_arrival} мин',
+        bot.edit_message_text(text=f'Настройте время до прибытия:\n{time_to_arrival} мин',
                               chat_id=callback.from_user.id,
                               message_id=callback.message.id, reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'arrival_minutes':
@@ -736,7 +736,8 @@ def check_time_interval():
     global flag_check_time_interval
     while True:
         time = datetime.datetime.now() - datetime.timedelta(minutes=1)
-        if int(datetime.datetime.now().strftime('%S')) == 0 and flag_check_time_interval:
+        if (int(datetime.datetime.now().strftime('%S')) == 0 or int(
+                datetime.datetime.now().strftime('%S')) == 30) and flag_check_time_interval:
             with sqlite3.connect('users.db') as database:
                 cursor = database.cursor()
                 cursor.execute(f"""
@@ -756,7 +757,8 @@ flag_notification = True
 def notification():
     global flag_notification
     while True:
-        if int(datetime.datetime.now().strftime('%S')) == 0 and flag_notification:
+        if (int(datetime.datetime.now().strftime('%S')) == 0 or int(
+                datetime.datetime.now().strftime('%S')) == 30) and flag_notification:
             with sqlite3.connect('users.db') as database:
                 cursor = database.cursor()
                 tracked_vehicles = cursor.execute(f"""
@@ -772,7 +774,8 @@ def notification():
                     print(vehicle[3], time_arrival)
                     if time_arrival == vehicle[4] - 1 or time_arrival == vehicle[4]:
                         bot.send_message(chat_id=vehicle[0],
-                                         text=f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival} мин')
+                                         text=f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival} мин на остановку {vehicle[1]}')
+                        start()
                         cursor.execute(f"""
                         UPDATE users
                         SET tracked=0
