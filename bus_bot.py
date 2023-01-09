@@ -745,7 +745,9 @@ def check_time_interval():
                 SET tracked = 1
                 WHERE transport_time_interval='{time.strftime('%H:%M')}'
                 AND transport_weekdays LIKE '%{int(datetime.datetime.now().strftime('%u')) - 1}%'
+                AND tracked=0
                 """)
+                database.commit()
             flag_check_time_interval = False
         elif int(datetime.datetime.now().strftime('%S')) != 0:
             flag_check_time_interval = True
@@ -775,13 +777,33 @@ def notification():
                     if time_arrival == vehicle[4] - 1 or time_arrival == vehicle[4]:
                         bot.send_message(chat_id=vehicle[0],
                                          text=f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival} мин на остановку {vehicle[1]}')
-                        start()
+                        user_stops = cursor.execute(f"""
+                                SELECT DISTINCT stop_link, stop_name
+                                FROM users
+                                WHERE user_id={vehicle[0]}
+                                """).fetchall()
+                        if len(user_stops) != 0:
+                            stops = ''
+                            for i, stop in enumerate(user_stops):
+                                stops += str(stop[1]) + '\n'
+                            keyboard = types.InlineKeyboardMarkup(row_width=1)
+                            keyboard.add(
+                                types.InlineKeyboardButton(text='Выбор остановки🚏✔️', callback_data='stop_select'),
+                                types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
+                            bot.send_message(vehicle[0], f'Ваши остановки:\n{stops} ', reply_markup=keyboard)
+                        else:
+                            keyboard = types.InlineKeyboardMarkup(row_width=1)
+                            keyboard.add(
+                                types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
+                            bot.send_message(vehicle[0], 'У вас нет отслеживаемых остановок',
+                                             reply_markup=keyboard)
                         cursor.execute(f"""
                         UPDATE users
                         SET tracked=0
                         WHERE user_id={vehicle[0]} AND stop_link='{vehicle[2]}'
                         AND transport_name='{vehicle[3]}'
                         """)
+                        database.commit()
             flag_notification = False
         elif int(datetime.datetime.now().strftime('%S')) != 0:
             flag_notification = True
