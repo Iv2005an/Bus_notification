@@ -745,7 +745,6 @@ def check_time_interval():
                 SET tracked = 1
                 WHERE transport_time_interval='{time.strftime('%H:%M')}'
                 AND transport_weekdays LIKE '%{int(datetime.datetime.now().strftime('%u')) - 1}%'
-                AND tracked!=1
                 """)
                 database.commit()
             flag_check_time_interval = False
