@@ -150,7 +150,7 @@ def callback_button(callback):
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(types.InlineKeyboardButton(text='Назад🔙', callback_data='start'))
         bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
-                              text='Вставьте ссылку на остановку', reply_markup=keyboard)
+                              text='Вставьте ссылку на остановку с Яндекс Карт', reply_markup=keyboard)
     elif callback.data == 'stop_select':
         with sqlite3.connect("users.db") as database:
             cursor = database.cursor()
