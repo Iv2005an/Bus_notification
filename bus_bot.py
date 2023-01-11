@@ -745,7 +745,7 @@ def check_time_interval():
                 SET tracked = 1
                 WHERE transport_time_interval='{time.strftime('%H:%M')}'
                 AND transport_weekdays LIKE '%{int(datetime.datetime.now().strftime('%u')) - 1}%'
-                AND tracked=0
+                AND tracked!=1
                 """)
                 database.commit()
             flag_check_time_interval = False
@@ -773,7 +773,7 @@ def notification():
                         time_arrival = int(time_arrival[:-4])
                     except ValueError:
                         continue
-                    print(vehicle[3], time_arrival)
+                    print(f'{datetime.datetime.now()}:', vehicle[3], time_arrival)
                     if time_arrival == vehicle[4]:
                         bot.send_message(chat_id=vehicle[0],
                                          text=f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival} мин на остановку {vehicle[1]}')
