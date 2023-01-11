@@ -743,8 +743,10 @@ def check_time_interval():
                 cursor.execute(f"""
                 UPDATE users
                 SET tracked = 1
-                WHERE transport_time_interval='{time.strftime('%H:%M')}'
+                WHERE (transport_time_interval='{datetime.datetime.now().strftime('%H:%M')}'
+                OR transport_time_interval='{time.strftime('%H:%M')}')
                 AND transport_weekdays LIKE '%{int(datetime.datetime.now().strftime('%u')) - 1}%'
+                AND (tracked!=1 OR tracked IS NULL)
                 """)
                 database.commit()
             flag_check_time_interval = False
