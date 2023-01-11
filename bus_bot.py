@@ -749,7 +749,7 @@ def check_time_interval():
                 """)
                 database.commit()
             flag_check_time_interval = False
-        elif int(datetime.datetime.now().strftime('%S')) != 0 or int(datetime.datetime.now().strftime('%S')) != 30:
+        elif int(datetime.datetime.now().strftime('%S')) != 0 and int(datetime.datetime.now().strftime('%S')) != 30:
             flag_check_time_interval = True
 
 
@@ -805,7 +805,7 @@ def notification():
                         """)
                         database.commit()
             flag_notification = False
-        elif int(datetime.datetime.now().strftime('%S')) != 0 or int(datetime.datetime.now().strftime('%S')) != 30:
+        elif int(datetime.datetime.now().strftime('%S')) != 0 and int(datetime.datetime.now().strftime('%S')) != 30:
             flag_notification = True
 
 
