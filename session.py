@@ -23,6 +23,7 @@ headers = {
     'accept-language': 'ru,en;q=0.9',
     'cache-control': 'max-age=0',
     'cookie': 'maps_los=0; yandexuid=9891028751672861936; is_gdpr=0; is_gdpr_b=CJaLGxD+ngE=; i=BvTbBeP7FNr68YjQWsdI1sEfITv4h00L1dSpLmGYvGkDGADT0ryYT8pedO54SM7uh2s3/mZTenS8Pvo3GY0LdN3k30w=; yuidss=9891028751672861936; ymex=1988221937.yrts.1672861937; gdpr=0; _ym_uid=16728619371040387954; _ym_d=1672861938; _ym_isad=2; _yasc=zeI15jD4bl577sz+8/Mrx1PiN6TwC0514CBkg4syOm3o4JAuorEgP3kIlqFCbg==',
+    'referer': 'https://www.yandex.ru/clck/jsredir?from=yandex.ru;suggest;browser&text=',
     'sec-fetch-dest': 'document',
     'sec-fetch-mode': 'navigate',
     'sec-fetch-site': 'same-origin',

@@ -58,6 +58,7 @@ def transport_list(stop_link):
 
 def time_to_transport(stop_link, transport_name):
     response = session.get(stop_link, headers=headers)
+    print(response.url)
     soup = BeautifulSoup(response.text, 'html.parser')
     vehicles = soup.find_all(class_='masstransit-vehicle-snippet-view__main-text')
     for transport in vehicles:
