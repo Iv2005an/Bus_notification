@@ -70,7 +70,6 @@ def long_link(stop_link):
     response = session.get(stop_link, headers=headers)
     with open('src/log_response.log', 'a+', encoding='utf-8') as file:
         file.write(f'{str(datetime.datetime.now())}: long_link {response.url}')
-    print('long_link', response.url)
     soup = BeautifulSoup(response.text, 'html.parser')
     body = soup.find('body')
     scripts = body.find_all(name='script', type='text/javascript')
@@ -100,7 +99,6 @@ def name_stop(stop_link):
         return None
     with open('src/log_response.log', 'a+', encoding='utf-8') as file:
         file.write(f'{str(datetime.datetime.now())}: name_stop {response.url}')
-    print('name_stop', response.url)
     soup = BeautifulSoup(response.text, 'html.parser')
     try:
         name_stop = soup.find('h1', class_='card-title-view__title').text
@@ -116,7 +114,6 @@ def transport_dict(stop_link):
         return None
     with open('src/log_response.log', 'a+', encoding='utf-8') as file:
         file.write(f'{str(datetime.datetime.now())}: long_link {response.url}')
-    print('transport_dict', response.url)
     soup = BeautifulSoup(response.text, 'html.parser')
     try:
         vehicles = []
@@ -245,7 +242,6 @@ def callback_button(callback):
                             schedule += f'\n{transport[0]} - {transport_from_stop_with_time[transport[0]]}'
                     keyboard = types.InlineKeyboardMarkup(row_width=1)
                     if len(transport_from_database) != 0:
-                        print(transport_from_stop_with_time)
                         transport_at_stop = list(transport_from_stop_with_time)
                         user_stop_transport = [str(vehicle[0]) for vehicle in transport_from_database]
                         user_stop_transport.sort()
@@ -829,7 +825,8 @@ def notification():
                             time_arrival = None
                         else:
                             time_arrival = int(time_arrival[:-4])
-                        print(f'{datetime.datetime.now()}:', vehicle[3], time_arrival)
+                        with open('src/log_notification.log', 'a+', encoding='utf-8') as file:
+                            file.write(f'{datetime.datetime.now()}: {vehicle[3]} {time_arrival}')
                         if time_arrival == vehicle[4]:
                             user_stops = cursor.execute(f"""
                             SELECT DISTINCT stop_link, stop_name
