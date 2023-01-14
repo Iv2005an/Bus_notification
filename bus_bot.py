@@ -1,5 +1,3 @@
-import os
-
 import telebot
 from telebot import types
 from config import token
@@ -9,7 +7,7 @@ import datetime
 from session import session, headers
 from threading import Thread
 from os import mkdir, listdir
-from os.path import isfile, join
+from os.path import join
 
 bot = telebot.TeleBot(token)
 
