@@ -70,7 +70,7 @@ except Exception:
 
 def long_link(stop_link):
     response = session.get(stop_link, headers=headers)
-    with open('src\\log_response.log', 'a+', encoding='utf-8') as file:
+    with open('src/log_response.log', 'a+', encoding='utf-8') as file:
         file.write(f'{str(datetime.datetime.now())}: long_link {response.url}')
     print('long_link', response.url)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -100,7 +100,7 @@ def name_stop(stop_link):
         response = session.get(stop_link, headers=headers)
     except Exception:
         return None
-    with open('src\\log_response.log', 'a+', encoding='utf-8') as file:
+    with open('src/log_response.log', 'a+', encoding='utf-8') as file:
         file.write(f'{str(datetime.datetime.now())}: name_stop {response.url}')
     print('name_stop', response.url)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -116,7 +116,7 @@ def transport_dict(stop_link):
         response = session.get(stop_link, headers=headers)
     except Exception:
         return None
-    with open('src\\log_response.log', 'a+', encoding='utf-8') as file:
+    with open('src/log_response.log', 'a+', encoding='utf-8') as file:
         file.write(f'{str(datetime.datetime.now())}: long_link {response.url}')
     print('transport_dict', response.url)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -168,7 +168,7 @@ def debug(message):
 
 @bot.callback_query_handler(func=lambda func: True)
 def callback_button(callback):
-    with open('src\\log_callback_button.log', 'a+', encoding='utf-8') as file:
+    with open('src/log_callback_button.log', 'a+', encoding='utf-8') as file:
         file.write(
             f'{str(datetime.datetime.now())}: {str(callback.from_user.id)} {str(callback.data)}\n')
     if callback.data == 'start':
