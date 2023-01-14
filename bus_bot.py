@@ -20,7 +20,7 @@ try:
     stop_name TEXT,
     stop_link TEXT,
     transport_name TEXT,
-    transport_time_interval TEXT,
+    transport_tracking_start_time TEXT,
     transport_time_to_arrival INTEGER,
     transport_weekdays TEXT,
     tracked INTEGER
@@ -37,7 +37,7 @@ except Exception:
             stop_name TEXT,
             stop_link TEXT,
             transport_name TEXT,
-            transport_time_interval TEXT,
+            transport_tracking_start_time TEXT,
             transport_time_to_arrival INTEGER,
             transport_weekdays TEXT,
             tracked INTEGER
@@ -54,7 +54,7 @@ except Exception:
             stop_name TEXT,
             stop_link TEXT,
             transport_name TEXT,
-            transport_time_interval TEXT,
+            transport_tracking_start_time TEXT,
             transport_time_to_arrival INTEGER,
             transport_weekdays TEXT,
             tracked INTEGER
@@ -369,7 +369,7 @@ def callback_button(callback):
                     else:
                         cursor.execute(f"""
                         INSERT INTO users (
-                        user_id, stop_name, stop_link, transport_name, transport_time_interval, transport_time_to_arrival)
+                        user_id, stop_name, stop_link, transport_name, transport_tracking_start_time, transport_time_to_arrival)
                         VALUES ('{callback.from_user.id}', '{stop[0]}', '{stop[1]}', '{t}', 'Никогда', 0)
                         """)
                     database.commit()
@@ -383,7 +383,7 @@ def callback_button(callback):
         keyboard = types.InlineKeyboardMarkup(row_width=1)
         keyboard.add(
             types.InlineKeyboardButton(text='Начало отслеживания⌚️',
-                                       callback_data=f'setting_transport_time_interval {s} {t}'),
+                                       callback_data=f'setting_transport_tracking_start_time {s} {t}'),
             types.InlineKeyboardButton(text='Время до прибытия⏲️',
                                        callback_data=f'setting_transport_time_to_arrival {s} {t}'),
             types.InlineKeyboardButton(text='Дни недели🗓️',
@@ -392,6 +392,9 @@ def callback_button(callback):
                                        callback_data=f'transport_delete {s} {t}'),
             types.InlineKeyboardButton(text='Назад🔙',
                                        callback_data=f'transport_select {s}'))
+        with sqlite3.connect('src/users.db') as database:
+            cursor = database.cursor()
+
         bot.edit_message_text(text=f'{t}:', chat_id=callback.from_user.id, message_id=callback.message.id,
                               reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_delete':
@@ -407,7 +410,7 @@ def callback_button(callback):
             """).fetchall()) == 1:
                 cursor.execute(f"""
                 UPDATE users
-                SET transport_name = NULL, transport_time_interval = NULL,
+                SET transport_name = NULL, transport_tracking_start_time = NULL,
                 transport_time_to_arrival = NULL, transport_weekdays = NULL
                 WHERE user_id={callback.from_user.id} AND stop_link='{s_l}'
                 """)
@@ -419,7 +422,7 @@ def callback_button(callback):
             database.commit()
             callback.data = f'stop_selected {s}'
             callback_button(callback)
-    elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_time_interval':
+    elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_tracking_start_time':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
@@ -439,7 +442,7 @@ def callback_button(callback):
         with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             time_interval = cursor.execute(f"""
-            SELECT transport_time_interval FROM users
+            SELECT transport_tracking_start_time FROM users
             WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}' AND transport_name='{t}'
             """).fetchall()[0][0]
         bot.edit_message_text(text=f'Настройте начало отслеживания:\n{time_interval}', chat_id=callback.from_user.id,
@@ -452,7 +455,7 @@ def callback_button(callback):
         with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             interval = cursor.execute(f"""
-            SELECT transport_time_interval FROM users
+            SELECT transport_tracking_start_time FROM users
             WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
             AND transport_name='{t}'
             """).fetchall()[0][0]
@@ -473,12 +476,12 @@ def callback_button(callback):
                 minutes = '0' + str(minutes)
             cursor.execute(f"""
             UPDATE users
-            SET transport_time_interval = '{hours}:{minutes}'
+            SET transport_tracking_start_time = '{hours}:{minutes}', tracked = 0
             WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
             AND transport_name='{t}'
             """)
             database.commit()
-            callback.data = f'setting_transport_time_interval {s} {t}'
+            callback.data = f'setting_transport_tracking_start_time {s} {t}'
             callback_button(callback)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'interval_minutes':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
@@ -488,7 +491,7 @@ def callback_button(callback):
         with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             interval = cursor.execute(f"""
-                    SELECT transport_time_interval FROM users
+                    SELECT transport_tracking_start_time FROM users
                     WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
                     AND transport_name='{t}'
                     """).fetchall()[0][0]
@@ -509,12 +512,12 @@ def callback_button(callback):
                 hours = '0' + str(hours)
             cursor.execute(f"""
                     UPDATE users
-                    SET transport_time_interval = '{hours}:{minutes}'
+                    SET transport_tracking_start_time = '{hours}:{minutes}', tracked = 0
                     WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
                     AND transport_name='{t}'
                     """)
             database.commit()
-            callback.data = f'setting_transport_time_interval {s} {t}'
+            callback.data = f'setting_transport_tracking_start_time {s} {t}'
             callback_button(callback)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'interval_never':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
@@ -523,18 +526,18 @@ def callback_button(callback):
         with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             if cursor.execute(f"""
-            SELECT transport_time_interval FROM users
+            SELECT transport_tracking_start_time FROM users
             WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
             AND transport_name='{t}'
             """).fetchall()[0][0] != 'Никогда':
                 cursor.execute(f"""
                 UPDATE users
-                SET transport_time_interval = 'Никогда'
+                SET transport_tracking_start_time = 'Никогда', tracked = 0
                 WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
                 AND transport_name='{t}'
                 """)
                 database.commit()
-                callback.data = f'setting_transport_time_interval {s} {t}'
+                callback.data = f'setting_transport_tracking_start_time {s} {t}'
                 callback_button(callback)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'interval_now':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
@@ -543,18 +546,18 @@ def callback_button(callback):
         with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             if cursor.execute(f"""
-                    SELECT transport_time_interval FROM users
+                    SELECT transport_tracking_start_time FROM users
                     WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
                     AND transport_name='{t}'
                     """).fetchall()[0][0] != str(datetime.datetime.now().strftime("%H:%M")):
                 cursor.execute(f"""
                         UPDATE users
-                        SET transport_time_interval = '{datetime.datetime.now().strftime("%H:%M")}'
+                        SET transport_tracking_start_time = '{datetime.datetime.now().strftime("%H:%M")}', tracked = 0
                         WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
                         AND transport_name='{t}'
                         """)
                 database.commit()
-                callback.data = f'setting_transport_time_interval {s} {t}'
+                callback.data = f'setting_transport_tracking_start_time {s} {t}'
                 callback_button(callback)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'setting_transport_time_to_arrival':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
@@ -756,7 +759,7 @@ def text_handler(message):
                     WHERE user_id='{message.from_user.id}'
                     AND stop_link='{link}'""").fetchall()) == 0:
                         cursor.execute(f"""INSERT INTO users (
-                        user_id, stop_name, stop_link, transport_time_interval, transport_time_to_arrival)
+                        user_id, stop_name, stop_link, transport_tracking_start_time, transport_time_to_arrival)
                         VALUES ('{message.from_user.id}', '{name_stop(link)}', '{link}', 'Никогда', 0)""")
                         bot.edit_message_text(text='Остановка успешно добавлена', chat_id=message.from_user.id,
                                               message_id=message.id + 1)
@@ -787,10 +790,9 @@ def check_time_interval():
                 cursor.execute(f"""
                 UPDATE users
                 SET tracked = 1
-                WHERE (transport_time_interval='{datetime.datetime.now().strftime('%H:%M')}'
-                OR transport_time_interval='{time.strftime('%H:%M')}')
+                WHERE (transport_tracking_start_time='{datetime.datetime.now().strftime('%H:%M')}'
+                OR transport_tracking_start_time='{time.strftime('%H:%M')}')
                 AND transport_weekdays LIKE '%{int(datetime.datetime.now().strftime('%u')) - 1}%'
-                AND (tracked!=1 OR tracked IS NULL)
                 """)
                 database.commit()
             flag_check_time_interval = False
