@@ -14,7 +14,7 @@ driver = webdriver.Firefox(options=options)
 
 bot = telebot.TeleBot(token)
 
-with sqlite3.connect("users.db") as database:  # создание бд
+with sqlite3.connect("src/users.db") as database:  # создание бд
     cursor = database.cursor()
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users(
@@ -89,7 +89,7 @@ def long_link(stop_link):
 
 
 def stop_link(user_id, s):
-    with sqlite3.connect('users.db') as database:
+    with sqlite3.connect('src/users.db') as database:
         cursor = database.cursor()
         for s_i, stop in enumerate(cursor.execute(f"""
         SELECT DISTINCT stop_link
@@ -102,7 +102,7 @@ def stop_link(user_id, s):
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    with sqlite3.connect("users.db") as database:
+    with sqlite3.connect("src/users.db") as database:
         cursor = database.cursor()
         user_stops = cursor.execute(f"""
         SELECT DISTINCT stop_link, stop_name
@@ -129,7 +129,7 @@ def callback_button(callback):
     with open('log_callback_button.log', 'a', encoding='utf-8') as file:
         file.write(str(datetime.datetime.now()) + ' ' + str(callback.from_user.id) + ' ' + str(callback.data) + '\n')
     if callback.data == 'start':
-        with sqlite3.connect("users.db") as database:
+        with sqlite3.connect("src/users.db") as database:
             cursor = database.cursor()
             user_stops = cursor.execute(f"""
             SELECT DISTINCT stop_name
@@ -157,7 +157,7 @@ def callback_button(callback):
         bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                               text='Вставьте ссылку на остановку', reply_markup=keyboard)
     elif callback.data == 'stop_select':
-        with sqlite3.connect("users.db") as database:
+        with sqlite3.connect("src/users.db") as database:
             cursor = database.cursor()
             user_stops = cursor.execute(f"""
             SELECT DISTINCT stop_link, stop_name
@@ -176,7 +176,7 @@ def callback_button(callback):
         s = data[0]
         bot.edit_message_text(text='Пожалуйста подождите...', chat_id=callback.from_user.id,
                               message_id=callback.message.id)
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
             SELECT DISTINCT stop_link
@@ -231,7 +231,7 @@ def callback_button(callback):
     elif str(callback.data)[:str(callback.data).find(' ')] == 'stop_delete':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
             SELECT DISTINCT stop_link
@@ -253,7 +253,7 @@ def callback_button(callback):
         s = data[0]
         bot.edit_message_text(text='Пожалуйста подождите...', chat_id=callback.from_user.id,
                               message_id=callback.message.id)
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
             SELECT DISTINCT stop_link
@@ -282,7 +282,7 @@ def callback_button(callback):
     elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_select':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
             SELECT DISTINCT stop_link
@@ -307,7 +307,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
             SELECT DISTINCT stop_name, stop_link
@@ -359,7 +359,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             s_l = stop_link(callback.from_user.id, s)
             if len(cursor.execute(f"""
@@ -397,7 +397,7 @@ def callback_button(callback):
             types.InlineKeyboardButton(text='Никогда', callback_data=f'interval_never {s} {t}'),
             types.InlineKeyboardButton(text='Сейчас', callback_data=f'interval_now {s} {t}'),
             types.InlineKeyboardButton(text='Назад🔙', callback_data=f'transport_selected_to_setting {s} {t}'))
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             time_interval = cursor.execute(f"""
             SELECT transport_time_interval FROM users
@@ -410,7 +410,7 @@ def callback_button(callback):
         s = data[0]
         t = data[1]
         h = data[2]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             interval = cursor.execute(f"""
             SELECT transport_time_interval FROM users
@@ -446,7 +446,7 @@ def callback_button(callback):
         s = data[0]
         t = data[1]
         m = data[2]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             interval = cursor.execute(f"""
                     SELECT transport_time_interval FROM users
@@ -481,7 +481,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             if cursor.execute(f"""
             SELECT transport_time_interval FROM users
@@ -501,7 +501,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             if cursor.execute(f"""
                     SELECT transport_time_interval FROM users
@@ -528,7 +528,7 @@ def callback_button(callback):
             types.InlineKeyboardButton(text='-5мин', callback_data=f'arrival_minutes {s} {t} -5'),
             types.InlineKeyboardButton(text='+5мин', callback_data=f'arrival_minutes {s} {t} 5'),
             types.InlineKeyboardButton(text='Назад🔙', callback_data=f'transport_selected_to_setting {s} {t}'))
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             time_to_arrival = cursor.execute(f"""
             SELECT transport_time_to_arrival FROM users
@@ -542,7 +542,7 @@ def callback_button(callback):
         s = data[0]
         t = data[1]
         m = data[2]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             interval = cursor.execute(f"""
             SELECT transport_time_to_arrival FROM users
@@ -566,7 +566,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             weekdays = str(cursor.execute(f"""
             SELECT transport_weekdays FROM users
@@ -595,7 +595,7 @@ def callback_button(callback):
         s = data[0]
         t = data[1]
         w = data[2]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             weekdays = str(cursor.execute(f"""
             SELECT transport_weekdays FROM users
@@ -624,7 +624,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             weekdays = str(cursor.execute(f"""
                         SELECT transport_weekdays FROM users
@@ -648,7 +648,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             weekdays = str(cursor.execute(f"""
             SELECT transport_weekdays FROM users
@@ -672,7 +672,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             weekdays = str(cursor.execute(f"""
             SELECT transport_weekdays FROM users
@@ -710,7 +710,7 @@ def text_handler(message):
                                       message_id=message.id + 1)
                 start(message)
             elif stop_name is not None:
-                with sqlite3.connect("users.db") as database:
+                with sqlite3.connect("src/users.db") as database:
                     cursor = database.cursor()
                     if len(cursor.execute(f"""SELECT DISTINCT *
                     FROM users
@@ -742,7 +742,7 @@ def check_time_interval():
     while True:
         time = datetime.datetime.now() - datetime.timedelta(minutes=1)
         if int(datetime.datetime.now().strftime('%S')) == 0 and flag_check_time_interval:
-            with sqlite3.connect('users.db') as database:
+            with sqlite3.connect('src/users.db') as database:
                 cursor = database.cursor()
                 cursor.execute(f"""
                 UPDATE users
@@ -762,7 +762,7 @@ def notification():
     global flag_notification
     while True:
         if int(datetime.datetime.now().strftime('%S')) == 0 and flag_notification:
-            with sqlite3.connect('users.db') as database:
+            with sqlite3.connect('src/users.db') as database:
                 cursor = database.cursor()
                 tracked_vehicles = cursor.execute(f"""
                 SELECT user_id, stop_name, stop_link, transport_name, transport_time_to_arrival FROM users

@@ -1,3 +1,5 @@
+import os
+
 import telebot
 from telebot import types
 from config import token
@@ -6,10 +8,12 @@ from bs4 import BeautifulSoup
 import datetime
 from session import session, headers
 from threading import Thread
+from os import mkdir, listdir
+from os.path import isfile, join
 
 bot = telebot.TeleBot(token)
 
-with sqlite3.connect("users.db") as database:  # создание бд
+with sqlite3.connect("src/users.db") as database:  # создание бд
     cursor = database.cursor()
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users(
@@ -23,57 +27,17 @@ with sqlite3.connect("users.db") as database:  # создание бд
     tracked INTEGER
     )""")
     database.commit()
-
-
-def name_stop(stop_link):
-    try:
-        response = session.get(stop_link, headers=headers)
-    except Exception:
-        return None
-    soup = BeautifulSoup(response.text, 'html.parser')
-    try:
-        n_stop = soup.find('h1', class_='card-title-view__title').text
-    except AttributeError:
-        return None
-    return n_stop
-
-
-def transport_list(stop_link):
-    try:
-        response = session.get(stop_link, headers=headers)
-    except Exception:
-        return None
-    soup = BeautifulSoup(response.text, 'html.parser')
-    try:
-        print(response.url)
-        # print(response.text)
-        vehicles = []
-        for transport in soup.find_all(class_='masstransit-vehicle-snippet-view__main-text'):
-            vehicles.append(transport.text)
-            vehicles.sort()
-    except AttributeError:
-        return None
-    return vehicles
-
-
-def time_to_transport(stop_link, transport_name):
-    response = session.get(stop_link, headers=headers)
-    print(response.url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    vehicles = soup.find_all(class_='masstransit-vehicle-snippet-view__main-text')
-    for transport in vehicles:
-        if transport.text == transport_name:
-            try:
-                t_to_transport = transport.find_next(class_='masstransit-prognoses-view__title-text').text
-            except AttributeError:
-                t_to_transport = 'Не известно'
-            return t_to_transport
+try:
+    mkdir('src')
+except Exception:
+    pass
 
 
 def long_link(stop_link):
     response = session.get(stop_link, headers=headers)
-    print(response.url)
-    # print(response.text)
+    with open('src\\log_response.log', 'a+', encoding='utf-8') as file:
+        file.write(f'{str(datetime.datetime.now())}: long_link {response.url}')
+    print('long_link', response.url)
     soup = BeautifulSoup(response.text, 'html.parser')
     body = soup.find('body')
     scripts = body.find_all(name='script', type='text/javascript')
@@ -85,7 +49,7 @@ def long_link(stop_link):
 
 
 def stop_link(user_id, s):
-    with sqlite3.connect('users.db') as database:
+    with sqlite3.connect('src/users.db') as database:
         cursor = database.cursor()
         for s_i, stop in enumerate(cursor.execute(f"""
         SELECT DISTINCT stop_link
@@ -96,9 +60,46 @@ def stop_link(user_id, s):
                 return stop[0]
 
 
+def name_stop(stop_link):
+    try:
+        response = session.get(stop_link, headers=headers)
+    except Exception:
+        return None
+    with open('src\\log_response.log', 'a+', encoding='utf-8') as file:
+        file.write(f'{str(datetime.datetime.now())}: name_stop {response.url}')
+    print('name_stop', response.url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    try:
+        name_stop = soup.find('h1', class_='card-title-view__title').text
+    except AttributeError:
+        return None
+    return name_stop
+
+
+def transport_dict(stop_link):
+    try:
+        response = session.get(stop_link, headers=headers)
+    except Exception:
+        return None
+    with open('src\\log_response.log', 'a+', encoding='utf-8') as file:
+        file.write(f'{str(datetime.datetime.now())}: long_link {response.url}')
+    print('transport_dict', response.url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    try:
+        vehicles = []
+        times = []
+        for transport in soup.find_all(class_='masstransit-vehicle-snippet-view__main-text'):
+            vehicles.append(transport.text)
+            times.append(transport.find_next(class_='masstransit-prognoses-view__title-text').text)
+        transport_dict = dict(sorted(dict(zip(vehicles, times)).items()))
+    except AttributeError:
+        return None
+    return transport_dict
+
+
 @bot.message_handler(commands=['start'])
 def start(message):
-    with sqlite3.connect("users.db") as database:
+    with sqlite3.connect("src/users.db") as database:
         cursor = database.cursor()
         user_stops = cursor.execute(f"""
         SELECT DISTINCT stop_link, stop_name
@@ -120,12 +121,23 @@ def start(message):
             bot.send_message(message.from_user.id, 'У вас нет отслеживаемых остановок', reply_markup=keyboard)
 
 
+@bot.message_handler(commands=['debug'])
+def debug(message):
+    if message.from_user.id == 790804074:
+        for file in listdir('src'):
+            bot.send_document(message.from_user.id, open(join('src', file), 'rb'))
+    else:
+        bot.send_message(message.from_user.id, 'У вас нет прав')
+    start(message)
+
+
 @bot.callback_query_handler(func=lambda func: True)
 def callback_button(callback):
-    with open('log_callback_button.log', 'a', encoding='utf-8') as file:
-        file.write(str(datetime.datetime.now()) + ' ' + str(callback.from_user.id) + ' ' + str(callback.data) + '\n')
+    with open('src\\log_callback_button.log', 'a+', encoding='utf-8') as file:
+        file.write(
+            f'{str(datetime.datetime.now())}: {str(callback.from_user.id)} {str(callback.data)}\n')
     if callback.data == 'start':
-        with sqlite3.connect("users.db") as database:
+        with sqlite3.connect("src/users.db") as database:
             cursor = database.cursor()
             user_stops = cursor.execute(f"""
             SELECT DISTINCT stop_name
@@ -153,7 +165,7 @@ def callback_button(callback):
         bot.edit_message_text(chat_id=callback.from_user.id, message_id=callback.message.id,
                               text='Вставьте ссылку на остановку с Яндекс Карт', reply_markup=keyboard)
     elif callback.data == 'stop_select':
-        with sqlite3.connect("users.db") as database:
+        with sqlite3.connect("src/users.db") as database:
             cursor = database.cursor()
             user_stops = cursor.execute(f"""
             SELECT DISTINCT stop_link, stop_name
@@ -172,7 +184,7 @@ def callback_button(callback):
         s = data[0]
         bot.edit_message_text(text='Пожалуйста подождите...', chat_id=callback.from_user.id,
                               message_id=callback.message.id)
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
             SELECT DISTINCT stop_link
@@ -193,13 +205,15 @@ def callback_button(callback):
                     AND stop_link='{stop[0]}'
                     AND transport_name!='NULL'
                     """).fetchall()
+                    transport_from_stop_with_time = transport_dict(stop[0])
                     if len(transport_from_database) != 0:
                         schedule += ':'
                         for transport in transport_from_database:
-                            schedule += f'\n{transport[0]} - {time_to_transport(stop[0], transport[0])}'
+                            schedule += f'\n{transport[0]} - {transport_from_stop_with_time[transport[0]]}'
                     keyboard = types.InlineKeyboardMarkup(row_width=1)
                     if len(transport_from_database) != 0:
-                        transport_at_stop = transport_list(stop[0])
+                        print(transport_from_stop_with_time)
+                        transport_at_stop = list(transport_from_stop_with_time)
                         user_stop_transport = [str(vehicle[0]) for vehicle in transport_from_database]
                         user_stop_transport.sort()
                         if str(transport_at_stop).strip('[]') in str(user_stop_transport).strip('[]'):
@@ -227,7 +241,7 @@ def callback_button(callback):
     elif str(callback.data)[:str(callback.data).find(' ')] == 'stop_delete':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
             SELECT DISTINCT stop_link
@@ -249,7 +263,7 @@ def callback_button(callback):
         s = data[0]
         bot.edit_message_text(text='Пожалуйста подождите...', chat_id=callback.from_user.id,
                               message_id=callback.message.id)
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
             SELECT DISTINCT stop_link
@@ -257,7 +271,7 @@ def callback_button(callback):
             WHERE user_id={callback.from_user.id}
             """).fetchall()):
                 if str(s_i) == s:
-                    transport_from_stop = transport_list(stop[0])
+                    transport_from_stop = list(transport_dict(stop[0]))
                     transport_from_database = cursor.execute(f"""
                     SELECT DISTINCT transport_name
                     FROM users
@@ -278,7 +292,7 @@ def callback_button(callback):
     elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_select':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
             SELECT DISTINCT stop_link
@@ -303,7 +317,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             for s_i, stop in enumerate(cursor.execute(f"""
             SELECT DISTINCT stop_name, stop_link
@@ -355,7 +369,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             s_l = stop_link(callback.from_user.id, s)
             if len(cursor.execute(f"""
@@ -393,7 +407,7 @@ def callback_button(callback):
             types.InlineKeyboardButton(text='Никогда', callback_data=f'interval_never {s} {t}'),
             types.InlineKeyboardButton(text='Сейчас', callback_data=f'interval_now {s} {t}'),
             types.InlineKeyboardButton(text='Назад🔙', callback_data=f'transport_selected_to_setting {s} {t}'))
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             time_interval = cursor.execute(f"""
             SELECT transport_time_interval FROM users
@@ -406,7 +420,7 @@ def callback_button(callback):
         s = data[0]
         t = data[1]
         h = data[2]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             interval = cursor.execute(f"""
             SELECT transport_time_interval FROM users
@@ -442,7 +456,7 @@ def callback_button(callback):
         s = data[0]
         t = data[1]
         m = data[2]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             interval = cursor.execute(f"""
                     SELECT transport_time_interval FROM users
@@ -477,7 +491,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             if cursor.execute(f"""
             SELECT transport_time_interval FROM users
@@ -497,7 +511,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             if cursor.execute(f"""
                     SELECT transport_time_interval FROM users
@@ -524,7 +538,7 @@ def callback_button(callback):
             types.InlineKeyboardButton(text='-5мин', callback_data=f'arrival_minutes {s} {t} -5'),
             types.InlineKeyboardButton(text='+5мин', callback_data=f'arrival_minutes {s} {t} 5'),
             types.InlineKeyboardButton(text='Назад🔙', callback_data=f'transport_selected_to_setting {s} {t}'))
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             time_to_arrival = cursor.execute(f"""
             SELECT transport_time_to_arrival FROM users
@@ -538,7 +552,7 @@ def callback_button(callback):
         s = data[0]
         t = data[1]
         m = data[2]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             interval = cursor.execute(f"""
             SELECT transport_time_to_arrival FROM users
@@ -562,7 +576,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             weekdays = str(cursor.execute(f"""
             SELECT transport_weekdays FROM users
@@ -591,7 +605,7 @@ def callback_button(callback):
         s = data[0]
         t = data[1]
         w = data[2]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             weekdays = str(cursor.execute(f"""
             SELECT transport_weekdays FROM users
@@ -620,7 +634,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             weekdays = str(cursor.execute(f"""
                         SELECT transport_weekdays FROM users
@@ -644,7 +658,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             weekdays = str(cursor.execute(f"""
             SELECT transport_weekdays FROM users
@@ -668,7 +682,7 @@ def callback_button(callback):
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
         t = data[1]
-        with sqlite3.connect('users.db') as database:
+        with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
             weekdays = str(cursor.execute(f"""
             SELECT transport_weekdays FROM users
@@ -706,7 +720,7 @@ def text_handler(message):
                                       message_id=message.id + 1)
                 start(message)
             elif stop_name is not None:
-                with sqlite3.connect("users.db") as database:
+                with sqlite3.connect("src/users.db") as database:
                     cursor = database.cursor()
                     if len(cursor.execute(f"""SELECT DISTINCT *
                     FROM users
@@ -739,7 +753,7 @@ def check_time_interval():
         time = datetime.datetime.now() - datetime.timedelta(minutes=1)
         if (int(datetime.datetime.now().strftime('%S')) == 0 or int(
                 datetime.datetime.now().strftime('%S')) == 30) and flag_check_time_interval:
-            with sqlite3.connect('users.db') as database:
+            with sqlite3.connect('src/users.db') as database:
                 cursor = database.cursor()
                 cursor.execute(f"""
                 UPDATE users
@@ -763,49 +777,59 @@ def notification():
     while True:
         if (int(datetime.datetime.now().strftime('%S')) == 0 or int(
                 datetime.datetime.now().strftime('%S')) == 30) and flag_notification:
-            with sqlite3.connect('users.db') as database:
+            with sqlite3.connect('src/users.db') as database:
                 cursor = database.cursor()
                 tracked_vehicles = cursor.execute(f"""
                 SELECT user_id, stop_name, stop_link, transport_name, transport_time_to_arrival FROM users
                 WHERE tracked=1
+                ORDER BY stop_name
                 """).fetchall()
-                for vehicle in tracked_vehicles:
-                    time_arrival = str(time_to_transport(vehicle[2], vehicle[3]))
-                    try:
-                        time_arrival = int(time_arrival[:-4])
-                    except ValueError:
-                        continue
-                    print(f'{datetime.datetime.now()}:', vehicle[3], time_arrival)
-                    if time_arrival == vehicle[4]:
-                        bot.send_message(chat_id=vehicle[0],
-                                         text=f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival} мин на остановку {vehicle[1]}')
-                        user_stops = cursor.execute(f"""
-                                SELECT DISTINCT stop_link, stop_name
-                                FROM users
-                                WHERE user_id={vehicle[0]}
-                                """).fetchall()
-                        if len(user_stops) != 0:
-                            stops = ''
-                            for i, stop in enumerate(user_stops):
-                                stops += str(stop[1]) + '\n'
-                            keyboard = types.InlineKeyboardMarkup(row_width=1)
-                            keyboard.add(
-                                types.InlineKeyboardButton(text='Выбор остановки🚏✔️', callback_data='stop_select'),
-                                types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
-                            bot.send_message(vehicle[0], f'Ваши остановки:\n{stops} ', reply_markup=keyboard)
+                if len(tracked_vehicles) > 0:
+                    temp_stop = tracked_vehicles[0][2]
+                    temp_transport_from_stop_with_time = transport_dict(temp_stop)
+                    for vehicle in tracked_vehicles:
+                        if temp_stop != vehicle[2]:
+                            temp_transport_from_stop_with_time = transport_dict(vehicle[2])
+                            temp_stop = vehicle[2]
+                        time_arrival = temp_transport_from_stop_with_time[vehicle[3]]
+                        if time_arrival.find('мин') == -1:
+                            time_arrival = None
                         else:
-                            keyboard = types.InlineKeyboardMarkup(row_width=1)
-                            keyboard.add(
-                                types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
-                            bot.send_message(vehicle[0], 'У вас нет отслеживаемых остановок',
-                                             reply_markup=keyboard)
-                        cursor.execute(f"""
-                        UPDATE users
-                        SET tracked=0
-                        WHERE user_id={vehicle[0]} AND stop_link='{vehicle[2]}'
-                        AND transport_name='{vehicle[3]}'
-                        """)
-                        database.commit()
+                            time_arrival = int(time_arrival[:-4])
+                        print(f'{datetime.datetime.now()}:', vehicle[3], time_arrival)
+                        if time_arrival == vehicle[4]:
+                            user_stops = cursor.execute(f"""
+                            SELECT DISTINCT stop_link, stop_name
+                            FROM users
+                            WHERE user_id={vehicle[0]}
+                            """).fetchall()
+                            if len(user_stops) != 0:
+                                stops = ''
+                                for i, stop in enumerate(user_stops):
+                                    stops += str(stop[1]) + '\n'
+                                keyboard = types.InlineKeyboardMarkup(row_width=1)
+                                keyboard.add(
+                                    types.InlineKeyboardButton(text='Выбор остановки🚏✔️', callback_data='stop_select'),
+                                    types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
+                                bot.send_message(vehicle[0],
+                                                 f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival} мин на остановку {vehicle[1]}\n'
+                                                 f'Ваши остановки:\n{stops} ',
+                                                 reply_markup=keyboard)
+                            else:
+                                keyboard = types.InlineKeyboardMarkup(row_width=1)
+                                keyboard.add(
+                                    types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
+                                bot.send_message(vehicle[0],
+                                                 'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival} мин на остановку {vehicle[1]}\n'
+                                                 'У вас нет отслеживаемых остановок',
+                                                 reply_markup=keyboard)
+                            cursor.execute(f"""
+                            UPDATE users
+                            SET tracked=0
+                            WHERE user_id={vehicle[0]} AND stop_link='{vehicle[2]}'
+                            AND transport_name='{vehicle[3]}'
+                            """)
+                            database.commit()
             flag_notification = False
         elif int(datetime.datetime.now().strftime('%S')) != 0 and int(datetime.datetime.now().strftime('%S')) != 30:
             flag_notification = True
