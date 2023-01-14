@@ -13,8 +13,9 @@ from os.path import isfile, join
 
 bot = telebot.TeleBot(token)
 
-with sqlite3.connect("src/users.db") as database:  # создание бд
-    cursor = database.cursor()
+try:
+    with sqlite3.connect("src/users.db") as database:  # создание бд
+        cursor = database.cursor()
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users(
     user_id INTEGER,
@@ -27,6 +28,40 @@ with sqlite3.connect("src/users.db") as database:  # создание бд
     tracked INTEGER
     )""")
     database.commit()
+except Exception:
+    try:
+        with open('src/users.db', 'w'):
+            with sqlite3.connect("src/users.db") as database:  # создание бд
+                cursor = database.cursor()
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users(
+            user_id INTEGER,
+            stop_name TEXT,
+            stop_link TEXT,
+            transport_name TEXT,
+            transport_time_interval TEXT,
+            transport_time_to_arrival INTEGER,
+            transport_weekdays TEXT,
+            tracked INTEGER
+            )""")
+            database.commit()
+    except Exception:
+        mkdir('src')
+        with open('src/users.db', 'w'):
+            with sqlite3.connect("src/users.db") as database:  # создание бд
+                cursor = database.cursor()
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users(
+            user_id INTEGER,
+            stop_name TEXT,
+            stop_link TEXT,
+            transport_name TEXT,
+            transport_time_interval TEXT,
+            transport_time_to_arrival INTEGER,
+            transport_weekdays TEXT,
+            tracked INTEGER
+            )""")
+            database.commit()
 try:
     mkdir('src')
 except Exception:
