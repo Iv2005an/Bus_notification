@@ -394,9 +394,17 @@ def callback_button(callback):
                                        callback_data=f'transport_select {s}'))
         with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
-
-        bot.edit_message_text(text=f'{t}:', chat_id=callback.from_user.id, message_id=callback.message.id,
-                              reply_markup=keyboard)
+            transport_info = cursor.execute(f"""
+            SELECT transport_tracking_start_time, transport_time_to_arrival
+            FROM users
+            WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}' AND transport_name='{t}'
+            """).fetchall()[0]
+            transport_tracking_start_time = transport_info[0]
+            transport_time_to_arrival = transport_info[1]
+        bot.edit_message_text(
+            text=f'Настройки автобуса {t}:\nНачало отслеживания: {transport_tracking_start_time}\nВремя до прибытия: {transport_time_to_arrival} мин\n',
+            chat_id=callback.from_user.id, message_id=callback.message.id,
+            reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'transport_delete':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
@@ -441,11 +449,12 @@ def callback_button(callback):
             types.InlineKeyboardButton(text='Назад🔙', callback_data=f'transport_selected_to_setting {s} {t}'))
         with sqlite3.connect('src/users.db') as database:
             cursor = database.cursor()
-            time_interval = cursor.execute(f"""
+            transport_tracking_start_time = cursor.execute(f"""
             SELECT transport_tracking_start_time FROM users
             WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}' AND transport_name='{t}'
             """).fetchall()[0][0]
-        bot.edit_message_text(text=f'Настройте начало отслеживания:\n{time_interval}', chat_id=callback.from_user.id,
+        bot.edit_message_text(text=f'Настройте начало отслеживания:\n{transport_tracking_start_time}',
+                              chat_id=callback.from_user.id,
                               message_id=callback.message.id, reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'interval_hours':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
