@@ -122,6 +122,8 @@ def transport_dict(stop_link):
             vehicles.append(transport.text)
             times.append(transport.find_next(class_='masstransit-prognoses-view__title-text').text)
         transport_dict = dict(sorted(dict(zip(vehicles, times)).items()))
+        if len(transport_dict) == 0:
+            return None
     except AttributeError:
         return None
     return transport_dict
@@ -282,7 +284,8 @@ def callback_button(callback):
                             keyboard.add(
                                 types.InlineKeyboardButton(text='Выбор остановки🚏✔️', callback_data='stop_select'),
                                 types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
-                            bot.send_message(callback.from_user.id, f'Ваши остановки:\n{stops} ',
+                            bot.send_message(callback.from_user.id,
+                                             f'Бот сломался, попробуйте через какое-то время\nВаши остановки:\n{stops} ',
                                              reply_markup=keyboard)
                         else:
                             keyboard = types.InlineKeyboardMarkup(row_width=1)
