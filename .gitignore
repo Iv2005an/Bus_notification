@@ -159,3 +159,4 @@ test.py
 src/users.db
 *.xlsx
 *.html
+*.db
