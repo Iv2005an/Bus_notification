@@ -293,7 +293,6 @@ def callback_button(callback):
                                 types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
                             bot.send_message(callback.from_user.id, 'У вас нет отслеживаемых остановок',
                                              reply_markup=keyboard)
-
     elif str(callback.data)[:str(callback.data).find(' ')] == 'stop_delete':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
