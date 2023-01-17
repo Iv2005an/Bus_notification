@@ -284,15 +284,19 @@ def callback_button(callback):
                             keyboard.add(
                                 types.InlineKeyboardButton(text='Выбор остановки🚏✔️', callback_data='stop_select'),
                                 types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
-                            bot.send_message(callback.from_user.id,
-                                             f'Бот сломался, попробуйте через какое-то время\nВаши остановки:\n{stops} ',
-                                             reply_markup=keyboard)
+                            bot.edit_message_text(
+                                text=f'Бот сломался, попробуйте через какое-то время\nВаши остановки:\n{stops} ',
+                                chat_id=callback.from_user.id,
+                                message_id=callback.message.id,
+                                reply_markup=keyboard)
                         else:
                             keyboard = types.InlineKeyboardMarkup(row_width=1)
                             keyboard.add(
                                 types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
-                            bot.send_message(callback.from_user.id, 'У вас нет отслеживаемых остановок',
-                                             reply_markup=keyboard)
+                            bot.edit_message_text(text='У вас нет отслеживаемых остановок',
+                                                  chat_id=callback.from_user.id,
+                                                  message_id=callback.message.id,
+                                                  reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'stop_delete':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
