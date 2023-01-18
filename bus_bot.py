@@ -69,7 +69,7 @@ except Exception:
 def long_link(stop_link):
     response = session.get(stop_link, headers=headers)
     with open('src/log_response.log', 'a+', encoding='utf-8') as file:
-        file.write(f'{str(datetime.datetime.now())}: long_link {response.url}')
+        file.write(f'{str(datetime.datetime.now())}: long_link {response.url}\n')
     soup = BeautifulSoup(response.text, 'html.parser')
     body = soup.find('body')
     scripts = body.find_all(name='script', type='text/javascript')
@@ -98,7 +98,7 @@ def name_stop(stop_link):
     except Exception:
         return None
     with open('src/log_response.log', 'a+', encoding='utf-8') as file:
-        file.write(f'{str(datetime.datetime.now())}: name_stop {response.url}')
+        file.write(f'{str(datetime.datetime.now())}: name_stop {response.url}\n')
     soup = BeautifulSoup(response.text, 'html.parser')
     try:
         name_stop = soup.find('h1', class_='card-title-view__title').text
@@ -113,7 +113,7 @@ def transport_dict(stop_link):
     except Exception:
         return None
     with open('src/log_response.log', 'a+', encoding='utf-8') as file:
-        file.write(f'{str(datetime.datetime.now())}: long_link {response.url}')
+        file.write(f'{str(datetime.datetime.now())}: long_link {response.url}\n')
     soup = BeautifulSoup(response.text, 'html.parser')
     try:
         vehicles = []
@@ -867,7 +867,7 @@ def notification():
                         else:
                             time_arrival = int(time_arrival[:-4])
                         with open('src/log_notification.log', 'a+', encoding='utf-8') as file:
-                            file.write(f'{datetime.datetime.now()}: {vehicle[3]} {time_arrival}')
+                            file.write(f'{datetime.datetime.now()}: {vehicle[3]} {time_arrival}\n')
                         if time_arrival == vehicle[4]:
                             user_stops = cursor.execute(f"""
                             SELECT DISTINCT stop_link, stop_name
