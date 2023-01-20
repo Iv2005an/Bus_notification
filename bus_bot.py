@@ -72,7 +72,10 @@ def long_link(stop_link):
         file.write(f'{str(datetime.datetime.now())}: long_link {response.url}\n')
     soup = BeautifulSoup(response.text, 'html.parser')
     body = soup.find('body')
-    scripts = body.find_all(name='script', type='text/javascript')
+    try:
+        scripts = body.find_all(name='script', type='text/javascript')
+    except AttributeError:
+        return None
     for s, script in enumerate(scripts):
         if s == 1:
             link = str(script)[str(script).find('<link rel="canonical" href="') + 28:
@@ -891,7 +894,7 @@ def notification():
                                                  reply_markup=keyboard)
                                 cursor.execute(f"""
                                 UPDATE users
-                                SET tracked=0
+                                SET tracked = 0
                                 WHERE user_id={vehicle[0]} AND stop_link='{vehicle[2]}'
                                 AND transport_name='{vehicle[3]}'
                                 """)
@@ -912,8 +915,14 @@ def notification():
                                 types.InlineKeyboardButton(text='Добавить остановку🚏➕',
                                                            callback_data='stop_add'))
                             bot.send_message(vehicle[0],
-                                             text=f'Бот сломался, попробуйте через какое-то время\nВаши остановки:\n{stops} ',
+                                             text=f'ВНИМАНИЕ‼️Отслеживание не работает!!!\nВаши остановки:\n{stops} ',
                                              reply_markup=keyboard)
+                            cursor.execute(f"""
+                            UPDATE users
+                            SET tracked = 0
+                            WHERE user_id={vehicle[0]} AND tracked=1
+                            """)
+                            database.commit()
             flag_notification = False
         elif int(datetime.datetime.now().strftime('%S')) != 0 and int(datetime.datetime.now().strftime('%S')) != 30:
             flag_notification = True
