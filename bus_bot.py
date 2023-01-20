@@ -859,22 +859,23 @@ def notification():
                     temp_transport_from_stop_with_time = transport_dict(temp_stop)
                     for vehicle in tracked_vehicles:
                         if temp_stop != vehicle[2]:
-                            temp_transport_from_stop_with_time = transport_dict(vehicle[2])
                             temp_stop = vehicle[2]
-                        time_arrival = temp_transport_from_stop_with_time[vehicle[3]]
-                        if time_arrival.find('мин') == -1:
-                            time_arrival = None
-                        else:
-                            time_arrival = int(time_arrival[:-4])
-                        with open('src/log_notification.log', 'a+', encoding='utf-8') as file:
-                            file.write(f'{datetime.datetime.now()}: {vehicle[3]} {time_arrival}\n')
-                        if time_arrival == vehicle[4]:
-                            user_stops = cursor.execute(f"""
-                            SELECT DISTINCT stop_link, stop_name
-                            FROM users
-                            WHERE user_id={vehicle[0]}
-                            """).fetchall()
-                            if len(user_stops) != 0:
+                            temp_transport_from_stop_with_time = transport_dict(temp_stop)
+                        if temp_transport_from_stop_with_time is not None:
+                            time_arrival = temp_transport_from_stop_with_time[vehicle[3]]
+                            if time_arrival.find('мин') == -1:
+                                time_arrival = None
+                            else:
+                                time_arrival = int(time_arrival[:-4])
+                            with open('src/log_notification.log', 'a+', encoding='utf-8') as file:
+                                file.write(
+                                    f'{datetime.datetime.now()}: {vehicle[0]} {vehicle[1]} {vehicle[2]} {vehicle[3]} {time_arrival}\n')
+                            if time_arrival == vehicle[4]:
+                                user_stops = cursor.execute(f"""
+                                SELECT DISTINCT stop_link, stop_name
+                                FROM users
+                                WHERE user_id={vehicle[0]}
+                                """).fetchall()
                                 stops = ''
                                 for i, stop in enumerate(user_stops):
                                     stops += str(stop[1]) + '\n'
@@ -888,22 +889,31 @@ def notification():
                                                  f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival} мин на остановку {vehicle[1]}\n'
                                                  f'Ваши остановки:\n{stops} ',
                                                  reply_markup=keyboard)
-                            else:
-                                keyboard = types.InlineKeyboardMarkup(row_width=1)
-                                keyboard.add(
-                                    types.InlineKeyboardButton(text='Добавить остановку🚏➕',
-                                                               callback_data='stop_add'))
-                                bot.send_message(vehicle[0],
-                                                 f'ВНИМАНИЕ‼️ {vehicle[3]} приедет через {time_arrival} мин на остановку {vehicle[1]}\n'
-                                                 f'У вас нет отслеживаемых остановок',
-                                                 reply_markup=keyboard)
-                            cursor.execute(f"""
-                            UPDATE users
-                            SET tracked=0
-                            WHERE user_id={vehicle[0]} AND stop_link='{vehicle[2]}'
-                            AND transport_name='{vehicle[3]}'
-                            """)
-                            database.commit()
+                                cursor.execute(f"""
+                                UPDATE users
+                                SET tracked=0
+                                WHERE user_id={vehicle[0]} AND stop_link='{vehicle[2]}'
+                                AND transport_name='{vehicle[3]}'
+                                """)
+                                database.commit()
+                        else:
+                            user_stops = cursor.execute(f"""
+                            SELECT DISTINCT stop_link, stop_name
+                            FROM users
+                            WHERE user_id={vehicle[0]}
+                            """).fetchall()
+                            stops = ''
+                            for i, stop in enumerate(user_stops):
+                                stops += str(stop[1]) + '\n'
+                            keyboard = types.InlineKeyboardMarkup(row_width=1)
+                            keyboard.add(
+                                types.InlineKeyboardButton(text='Выбор остановки🚏✔️',
+                                                           callback_data='stop_select'),
+                                types.InlineKeyboardButton(text='Добавить остановку🚏➕',
+                                                           callback_data='stop_add'))
+                            bot.send_message(vehicle[0],
+                                             text=f'Бот сломался, попробуйте через какое-то время\nВаши остановки:\n{stops} ',
+                                             reply_markup=keyboard)
             flag_notification = False
         elif int(datetime.datetime.now().strftime('%S')) != 0 and int(datetime.datetime.now().strftime('%S')) != 30:
             flag_notification = True
