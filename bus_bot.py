@@ -900,29 +900,36 @@ def notification():
                                 """)
                                 database.commit()
                         else:
-                            user_stops = cursor.execute(f"""
-                            SELECT DISTINCT stop_link, stop_name
+                            users = cursor.execute(f"""
+                            SELECT DISTINCT user_id
                             FROM users
-                            WHERE user_id={vehicle[0]}
-                            """).fetchall()
-                            stops = ''
-                            for i, stop in enumerate(user_stops):
-                                stops += str(stop[1]) + '\n'
-                            keyboard = types.InlineKeyboardMarkup(row_width=1)
-                            keyboard.add(
-                                types.InlineKeyboardButton(text='Выбор остановки🚏✔️',
-                                                           callback_data='stop_select'),
-                                types.InlineKeyboardButton(text='Добавить остановку🚏➕',
-                                                           callback_data='stop_add'))
-                            bot.send_message(vehicle[0],
-                                             text=f'ВНИМАНИЕ‼️Отслеживание не работает!!!\nВаши остановки:\n{stops} ',
-                                             reply_markup=keyboard)
+                            WHERE tracked=1
+                            """)
+                            for user in users:
+                                user_stops = cursor.execute(f"""
+                                SELECT DISTINCT stop_link, stop_name
+                                FROM users
+                                WHERE user_id={user[0]}
+                                """).fetchall()
+                                stops = ''
+                                for i, stop in enumerate(user_stops):
+                                    stops += str(stop[1]) + '\n'
+                                keyboard = types.InlineKeyboardMarkup(row_width=1)
+                                keyboard.add(
+                                    types.InlineKeyboardButton(text='Выбор остановки🚏✔️',
+                                                               callback_data='stop_select'),
+                                    types.InlineKeyboardButton(text='Добавить остановку🚏➕',
+                                                               callback_data='stop_add'))
+                                bot.send_message(user[0],
+                                                 text=f'ВНИМАНИЕ‼️Отслеживание НЕ работает!!!\nВаши остановки:\n{stops} ',
+                                                 reply_markup=keyboard)
                             cursor.execute(f"""
                             UPDATE users
                             SET tracked = 0
-                            WHERE user_id={vehicle[0]} AND tracked=1
+                            WHERE tracked=1
                             """)
                             database.commit()
+                            break
             flag_notification = False
         elif int(datetime.datetime.now().strftime('%S')) != 0 and int(datetime.datetime.now().strftime('%S')) != 30:
             flag_notification = True
