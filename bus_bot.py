@@ -241,7 +241,6 @@ def callback_button(callback):
                     AND transport_name!='NULL'
                     """).fetchall()
                     transport_from_stop_with_time = transport_dict(stop[0])
-                    # if transport_from_stop_with_time is not None:
                     if len(transport_from_database) != 0:
                         schedule += ':'
                         for transport in transport_from_database:
@@ -281,33 +280,6 @@ def callback_button(callback):
                     except telebot.apihelper.ApiTelegramException:
                         pass
                     break
-                    # else:
-                    #     user_stops = cursor.execute(f"""
-                    #         SELECT DISTINCT stop_link, stop_name
-                    #         FROM users
-                    #         WHERE user_id={callback.from_user.id}
-                    #         """).fetchall()
-                    #     if len(user_stops) != 0:
-                    #         stops = ''
-                    #         for i, stop in enumerate(user_stops):
-                    #             stops += str(stop[1]) + '\n'
-                    #         keyboard = types.InlineKeyboardMarkup(row_width=1)
-                    #         keyboard.add(
-                    #             types.InlineKeyboardButton(text='Выбор остановки🚏✔️', callback_data='stop_select'),
-                    #             types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
-                    #         bot.edit_message_text(
-                    #             text=f'Бот сломался, попробуйте через какое-то время\nВаши остановки:\n{stops} ',
-                    #             chat_id=callback.from_user.id,
-                    #             message_id=callback.message.id,
-                    #             reply_markup=keyboard)
-                    #     else:
-                    #         keyboard = types.InlineKeyboardMarkup(row_width=1)
-                    #         keyboard.add(
-                    #             types.InlineKeyboardButton(text='Добавить остановку🚏➕', callback_data='stop_add'))
-                    #         bot.edit_message_text(text='У вас нет отслеживаемых остановок',
-                    #                               chat_id=callback.from_user.id,
-                    #                               message_id=callback.message.id,
-                    #                               reply_markup=keyboard)
     elif str(callback.data)[:str(callback.data).find(' ')] == 'stop_delete':
         data = str(callback.data)[str(callback.data).find(' ') + 1:].split()
         s = data[0]
