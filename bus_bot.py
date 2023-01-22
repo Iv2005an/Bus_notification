@@ -116,7 +116,7 @@ def transport_dict(stop_link):
     except Exception:
         return None
     with open('src/log_response.log', 'a+', encoding='utf-8') as file:
-        file.write(f'{str(datetime.datetime.now())}: long_link {response.url}\n')
+        file.write(f'{str(datetime.datetime.now())}: transport_dict {response.url}\n')
     soup = BeautifulSoup(response.text, 'html.parser')
     try:
         vehicles = []
