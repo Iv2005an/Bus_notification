@@ -35,10 +35,13 @@ class TlsAdapter(HTTPAdapter):
 
 headers = {
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+    'accept-encoding': 'gzip, deflate, br',
     'accept-language': 'ru,en;q=0.9',
     'cache-control': 'max-age=0',
-    'cookie': 'maps_los=0; yandexuid=9891028751672861936; is_gdpr=0; is_gdpr_b=CJaLGxD+ngE=; i=BvTbBeP7FNr68YjQWsdI1sEfITv4h00L1dSpLmGYvGkDGADT0ryYT8pedO54SM7uh2s3/mZTenS8Pvo3GY0LdN3k30w=; yuidss=9891028751672861936; ymex=1988221937.yrts.1672861937; gdpr=0; _ym_uid=16728619371040387954; _ym_d=1672861938; _ym_isad=2; _yasc=zeI15jD4bl577sz+8/Mrx1PiN6TwC0514CBkg4syOm3o4JAuorEgP3kIlqFCbg==',
-    'referer': 'https://www.yandex.ru/clck/jsredir?from=yandex.ru;suggest;browser&text=',
+    'cookie': 'maps_los=0; yandexuid=9487894991674465594; yuidss=9487894991674465594; is_gdpr=0; is_gdpr_b=CPGsJRC8ogEoAg==; _yasc=CdHqv7s+d924PQ4uJgU+kKPo9tbFBhbdIWss9P7Hr0zjWT79strupdWsrGAT; i=WxpwSit/qRBaQiNz7/p3Jv4b+EQ7bPjkwqJLKoeK5y57cvPp7p7LJ9w6W7e63Je33Enc26Z8al0Yg8EPEGd94MFFb3c=; yashr=8447866831674465594; ymex=1989825604.yrts.1674465604; gdpr=0; _ym_uid=1674465605327520544; _ym_d=1674465605',
+    'referer': 'https://yandex.ru/',
+    'sec-ch-ua': '"Chromium";v="106", "Yandex";v="22", "Not;A=Brand";v="99"',
+    'sec-ch-ua-mobile': '?0',
     'sec-fetch-dest': 'document',
     'sec-fetch-mode': 'navigate',
     'sec-fetch-site': 'same-origin',
@@ -47,3 +50,5 @@ headers = {
 session = requests.session()
 adapter = TlsAdapter(ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
 session.mount("https://", adapter)
+session.headers = headers
+session.cookies = load_cookies()
