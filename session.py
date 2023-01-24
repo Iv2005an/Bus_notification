@@ -4,20 +4,6 @@ from requests.adapters import HTTPAdapter
 from urllib3.poolmanager import PoolManager
 from urllib3.util import ssl_
 from config import user_agent
-import pickle
-
-
-def load_cookies():
-    try:
-        with open('src/cookies', 'rb') as file:
-            return pickle.load(file)
-    except FileNotFoundError:
-        response = session.get('https://yandex.ru/maps', headers=headers)
-        with open('src/cookies', 'wb') as file:
-            pickle.dump(response.cookies, file)
-        with open('src/cookies', 'rb') as file:
-            return pickle.load(file)
-
 
 CIPHERS = """ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:AES256-SHA"""
 
@@ -51,4 +37,3 @@ session = requests.session()
 adapter = TlsAdapter(ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
 session.mount("https://", adapter)
 session.headers = headers
-session.cookies = load_cookies()
