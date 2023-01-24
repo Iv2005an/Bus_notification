@@ -4,7 +4,7 @@ from config import token
 import sqlite3
 from bs4 import BeautifulSoup
 import datetime
-from session import session, headers, load_cookies
+from session import session
 from threading import Thread
 from os import mkdir, listdir
 from os.path import join
@@ -67,7 +67,7 @@ except Exception:
 
 
 def long_link(stop_link):
-    response = session.get(stop_link, headers=headers, cookies=load_cookies())
+    response = session.get(stop_link)
     with open('src/log_response.log', 'a+', encoding='utf-8') as file:
         file.write(f'{str(datetime.datetime.now())}: long_link {response.url}\n')
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -97,7 +97,7 @@ def stop_link(user_id, s):
 
 def name_stop(stop_link):
     try:
-        response = session.get(stop_link, headers=headers, cookies=load_cookies())
+        response = session.get(stop_link)
     except Exception:
         return None
     with open('src/log_response.log', 'a+', encoding='utf-8') as file:
@@ -112,7 +112,7 @@ def name_stop(stop_link):
 
 def transport_dict(stop_link):
     try:
-        response = session.get(stop_link, headers=headers, cookies=load_cookies())
+        response = session.get(stop_link)
     except Exception:
         return None
     with open('src/log_response.log', 'a+', encoding='utf-8') as file:
