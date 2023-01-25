@@ -846,9 +846,7 @@ def notification():
                             temp_transport_from_stop_with_time = transport_dict(temp_stop)
                         if temp_transport_from_stop_with_time is not None:
                             time_arrival = temp_transport_from_stop_with_time[vehicle[3]]
-                            if time_arrival.find('мин') == -1:
-                                time_arrival = None
-                            else:
+                            if time_arrival.find('мин') != -1:
                                 time_arrival = int(time_arrival[:-4])
                             with open('src/log_notification.log', 'a+', encoding='utf-8') as file:
                                 file.write(
