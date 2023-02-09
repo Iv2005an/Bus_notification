@@ -574,7 +574,18 @@ def callback_button(callback):
                     """).fetchall()[0][0] != str(datetime.datetime.now().strftime("%H:%M")):
                 cursor.execute(f"""
                         UPDATE users
-                        SET transport_tracking_start_time = '{datetime.datetime.now().strftime("%H:%M")}', tracked = 0
+                        SET transport_tracking_start_time = '{datetime.datetime.now().strftime("%H:%M")}', tracked = 1
+                        WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+                        AND transport_name='{t}'
+                        """)
+                if cursor.execute(f"""
+                    SELECT transport_time_to_arrival FROM users
+                    WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
+                    AND transport_name='{t}'
+                    """).fetchall()[0][0] == 0:
+                    cursor.execute(f"""
+                        UPDATE users
+                        SET transport_time_to_arrival = 5
                         WHERE user_id={callback.from_user.id} AND stop_link='{stop_link(callback.from_user.id, s)}'
                         AND transport_name='{t}'
                         """)
@@ -804,18 +815,16 @@ flag_check_time_interval = True
 def check_time_interval():
     global flag_check_time_interval
     while True:
-        time = datetime.datetime.now() - datetime.timedelta(minutes=1)
         if (int(datetime.datetime.now().strftime('%S')) == 0 or int(
                 datetime.datetime.now().strftime('%S')) == 30) and flag_check_time_interval:
             with sqlite3.connect('src/users.db') as database:
                 cursor = database.cursor()
                 cursor.execute(f"""
-                UPDATE users
-                SET tracked = 1
-                WHERE (transport_tracking_start_time='{datetime.datetime.now().strftime('%H:%M')}'
-                OR transport_tracking_start_time='{time.strftime('%H:%M')}')
-                AND transport_weekdays LIKE '%{int(datetime.datetime.now().strftime('%u')) - 1}%'
-                """)
+                    UPDATE users
+                    SET tracked = 1
+                    WHERE (transport_tracking_start_time='{datetime.datetime.now().strftime('%H:%M')}'
+                    AND transport_weekdays LIKE '%{int(datetime.datetime.now().strftime('%u')) - 1}%'
+                    """)
                 database.commit()
             flag_check_time_interval = False
         elif int(datetime.datetime.now().strftime('%S')) != 0 and int(datetime.datetime.now().strftime('%S')) != 30:
