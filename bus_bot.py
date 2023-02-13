@@ -822,7 +822,7 @@ def check_time_interval():
                 cursor.execute(f"""
                     UPDATE users
                     SET tracked = 1
-                    WHERE (transport_tracking_start_time='{datetime.datetime.now().strftime('%H:%M')}'
+                    WHERE transport_tracking_start_time='{datetime.datetime.now().strftime('%H:%M')}'
                     AND transport_weekdays LIKE '%{int(datetime.datetime.now().strftime('%u')) - 1}%'
                     """)
                 database.commit()
