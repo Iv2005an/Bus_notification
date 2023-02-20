@@ -815,8 +815,7 @@ flag_check_time_interval = True
 def check_time_interval():
     global flag_check_time_interval
     while True:
-        if (int(datetime.datetime.now().strftime('%S')) == 0 or int(
-                datetime.datetime.now().strftime('%S')) == 30) and flag_check_time_interval:
+        if int(datetime.datetime.now().strftime('%S')) == 0 and flag_check_time_interval:
             with sqlite3.connect('src/users.db') as database:
                 cursor = database.cursor()
                 cursor.execute(f"""
@@ -827,7 +826,7 @@ def check_time_interval():
                     """)
                 database.commit()
             flag_check_time_interval = False
-        elif int(datetime.datetime.now().strftime('%S')) != 0 and int(datetime.datetime.now().strftime('%S')) != 30:
+        elif int(datetime.datetime.now().strftime('%S')) != 0:
             flag_check_time_interval = True
 
 
@@ -837,8 +836,7 @@ flag_notification = True
 def notification():
     global flag_notification
     while True:
-        if (int(datetime.datetime.now().strftime('%S')) == 0 or int(
-                datetime.datetime.now().strftime('%S')) == 30) and flag_notification:
+        if int(datetime.datetime.now().strftime('%S')) == 0 and flag_notification:
             with sqlite3.connect('src/users.db') as database:
                 cursor = database.cursor()
                 tracked_vehicles = cursor.execute(f"""
@@ -918,7 +916,7 @@ def notification():
                             database.commit()
                             break
             flag_notification = False
-        elif int(datetime.datetime.now().strftime('%S')) != 0 and int(datetime.datetime.now().strftime('%S')) != 30:
+        elif int(datetime.datetime.now().strftime('%S')) != 0:
             flag_notification = True
 
 
