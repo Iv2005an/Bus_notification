@@ -877,16 +877,16 @@ def notification():
                                 time_arrival = temp_transport_from_stop_with_time[vehicle[3]]
                             except KeyError:
                                 users = cursor.execute(f"""
-                                                            SELECT DISTINCT user_id
-                                                            FROM users
-                                                            WHERE tracked=1
-                                                            """)
+                                SELECT DISTINCT user_id
+                                FROM users
+                                WHERE tracked=1
+                                """)
                                 for user in users:
                                     user_stops = cursor.execute(f"""
-                                                                SELECT DISTINCT stop_link, stop_name
-                                                                FROM users
-                                                                WHERE user_id={user[0]}
-                                                                """).fetchall()
+                                    SELECT DISTINCT stop_link, stop_name
+                                    FROM users
+                                    WHERE user_id={user[0]}
+                                    """).fetchall()
                                     stops = ''
                                     for i, stop in enumerate(user_stops):
                                         stops += str(stop[1]) + '\n'
