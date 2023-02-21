@@ -132,6 +132,24 @@ def transport_dict(stop_link):
     return transport_dict
 
 
+def transport_list(stop_link):
+    try:
+        response = session.get(stop_link)
+    except Exception:
+        return None
+    with open('src/log_response.log', 'a+', encoding='utf-8') as file:
+        file.write(f'{str(datetime.datetime.now())}: transport_dict {response.url}\n')
+    soup = BeautifulSoup(response.text, 'html.parser')
+    try:
+        vehicles = [bus.text for bus in
+                    soup.find_all(class_='masstransit-transport-list-view__type-transport _type_bus _highlighted')]
+        if len(vehicles) == 0:
+            return None
+    except AttributeError:
+        return None
+    return vehicles
+
+
 @bot.message_handler(commands=['start'])
 def start(message):
     with sqlite3.connect("src/users.db") as database:
@@ -245,9 +263,12 @@ def callback_button(callback):
                         schedule += ':'
                         for transport in transport_from_database:
                             if transport_from_stop_with_time is None:
-                                transport_time = 'Ошибка'
+                                transport_time = 'В данный момент не доступен'
                             else:
-                                transport_time = transport_from_stop_with_time[transport[0]]
+                                try:
+                                    transport_time = transport_from_stop_with_time[transport[0]]
+                                except KeyError:
+                                    transport_time = 'В данный момент не доступен'
                             schedule += f'\n{transport[0]} - {transport_time}'
                     keyboard = types.InlineKeyboardMarkup(row_width=1)
                     if len(transport_from_database) != 0:
@@ -313,7 +334,7 @@ def callback_button(callback):
             WHERE user_id={callback.from_user.id}
             """).fetchall()):
                 if str(s_i) == s:
-                    transport_from_stop = list(transport_dict(stop[0]))
+                    transport_from_stop = transport_list(stop[0])
                     transport_from_database = cursor.execute(f"""
                     SELECT DISTINCT transport_name
                     FROM users
@@ -822,7 +843,7 @@ def check_time_interval():
                 cursor.execute(f"""
                     UPDATE users
                     SET tracked = 1
-                    WHERE (transport_tracking_start_time='{datetime.datetime.now().strftime('%H:%M')}'
+                    WHERE transport_tracking_start_time='{datetime.datetime.now().strftime('%H:%M')}'
                     AND transport_weekdays LIKE '%{int(datetime.datetime.now().strftime('%u')) - 1}%'
                     """)
                 database.commit()
@@ -854,7 +875,39 @@ def notification():
                             temp_stop = vehicle[2]
                             temp_transport_from_stop_with_time = transport_dict(temp_stop)
                         if temp_transport_from_stop_with_time is not None:
-                            time_arrival = temp_transport_from_stop_with_time[vehicle[3]]
+                            try:
+                                time_arrival = temp_transport_from_stop_with_time[vehicle[3]]
+                            except KeyError:
+                                users = cursor.execute(f"""
+                                                            SELECT DISTINCT user_id
+                                                            FROM users
+                                                            WHERE tracked=1
+                                                            """)
+                                for user in users:
+                                    user_stops = cursor.execute(f"""
+                                                                SELECT DISTINCT stop_link, stop_name
+                                                                FROM users
+                                                                WHERE user_id={user[0]}
+                                                                """).fetchall()
+                                    stops = ''
+                                    for i, stop in enumerate(user_stops):
+                                        stops += str(stop[1]) + '\n'
+                                    keyboard = types.InlineKeyboardMarkup(row_width=1)
+                                    keyboard.add(
+                                        types.InlineKeyboardButton(text='Выбор остановки🚏✔️',
+                                                                   callback_data='stop_select'),
+                                        types.InlineKeyboardButton(text='Добавить остановку🚏➕',
+                                                                   callback_data='stop_add'))
+                                    bot.send_message(user[0],
+                                                     text=f'ВНИМАНИЕ‼️{vehicle[3]} в данный момент НЕ доступен!!! Отслеживание отключено!!!\nВаши остановки:\n{stops} ',
+                                                     reply_markup=keyboard)
+                                cursor.execute(f"""
+                                UPDATE users
+                                SET tracked = 0
+                                WHERE tracked=1
+                                """)
+                                database.commit()
+                                break
                             if time_arrival.find('мин') != -1:
                                 time_arrival = int(time_arrival[:-4])
                             with open('src/log_notification.log', 'a+', encoding='utf-8') as file:
