@@ -12,7 +12,7 @@ from os.path import join
 bot = telebot.TeleBot(token)
 
 try:
-    with sqlite3.connect("src/users.db") as database:  # создание бд
+    with sqlite3.connect("src/users.db") as database:
         cursor = database.cursor()
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users(
@@ -29,7 +29,7 @@ try:
 except Exception:
     try:
         with open('src/users.db', 'w'):
-            with sqlite3.connect("src/users.db") as database:  # создание бд
+            with sqlite3.connect("src/users.db") as database:
                 cursor = database.cursor()
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS users(
@@ -46,7 +46,7 @@ except Exception:
     except Exception:
         mkdir('src')
         with open('src/users.db', 'w'):
-            with sqlite3.connect("src/users.db") as database:  # создание бд
+            with sqlite3.connect("src/users.db") as database:
                 cursor = database.cursor()
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS users(
